@@ -184,6 +184,7 @@ def get_info(url):
             'quiet': True,
             'no_warnings': True,
             'skip_download': True,
+            'format': 'bestaudio/best',
             'geo_bypass': True,
             'nocheckcertificate': True,
             'extractor_args': {
@@ -210,9 +211,7 @@ def get_info(url):
                 }
         except Exception as e:
             last_err = str(e)
-            if "Sign in to confirm you're not a bot" in last_err or "Use --cookies" in last_err:
-                continue
-            break
+            continue
 
     # If all failed with bot sign-in
     err_str = last_err or "Không thể tải thông tin từ YouTube"
@@ -303,9 +302,7 @@ def download_audio(url, target_format='mp3'):
                     last_err = f"Không tìm thấy file sau khi tải: {cached_file}"
         except Exception as e:
             last_err = str(e)
-            if "Sign in to confirm you're not a bot" in last_err or "Use --cookies" in last_err:
-                continue
-            break
+            continue
 
     err_str = last_err or "Lỗi tải âm thanh từ YouTube"
     if "Sign in to confirm you're not a bot" in err_str or "Use --cookies" in err_str:
