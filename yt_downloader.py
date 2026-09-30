@@ -108,8 +108,9 @@ def has_valid_cookies():
 
 def get_fallback_candidates():
     return [
-        ['android_music'],
+        ['visionos'],
         ['tv_embedded'],
+        ['android_music'],
         ['android'],
         ['ios_music'],
         ['mweb'],
