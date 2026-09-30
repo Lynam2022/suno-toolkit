@@ -695,7 +695,20 @@ const server = http.createServer(async (req, res) => {
       const tempInput = path.join(cacheDir, `${uuid}_raw.m4a`);
       fs.writeFileSync(tempInput, rawAudioBuffer);
 
-      await masterAudio(tempInput, cachedFile, preset, format);
+      try {
+        await masterAudio(tempInput, cachedFile, preset, format);
+      } catch (masterErr) {
+        console.warn(`[AutoMaster Fallback] ${uuid}:`, masterErr.message);
+        // Fallback: fast transcode directly using ffmpeg
+        await new Promise((resFast, rejFast) => {
+          const transcodeArgs = format === 'wav'
+            ? ['-y', '-hide_banner', '-i', tempInput, '-ar', '48000', '-c:a', 'pcm_s16le', '-f', 'wav', cachedFile]
+            : ['-y', '-hide_banner', '-i', tempInput, '-ar', '48000', '-c:a', 'libmp3lame', '-b:a', '320k', '-f', 'mp3', cachedFile];
+          const p = spawn('ffmpeg', transcodeArgs);
+          p.on('close', code => code === 0 ? resFast() : rejFast(new Error(`Fast transcode failed: ${code}`)));
+          p.on('error', rejFast);
+        });
+      }
 
       if (fs.existsSync(tempInput)) {
         try { fs.unlinkSync(tempInput); } catch (e) {}

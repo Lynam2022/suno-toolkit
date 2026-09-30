@@ -99,7 +99,7 @@ function ffmpeg(args) {
 async function measure(input, chain) {
   const err = await ffmpeg([
     '-hide_banner', '-nostats', '-i', input,
-    '-af', `${chain},ebur128=peak=true:framelog=quiet`,
+    '-af', `${chain},ebur128=peak=true`,
     '-f', 'null', '-',
   ]);
   const s = err.slice(err.lastIndexOf('Summary:'));

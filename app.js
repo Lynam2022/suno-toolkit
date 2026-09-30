@@ -1982,7 +1982,7 @@ function updateSunoLinkCount() {
   sunoLinkCountBadge.textContent = `${count} link đã nhận diện`;
 }
 
-async function fetchSunoAudioBlob(audioUrl) {
+async function fetchSunoAudioBlob(audioUrl, track = null) {
   try {
     const directRes = await fetch(audioUrl);
     if (directRes.ok) {
@@ -1991,6 +1991,7 @@ async function fetchSunoAudioBlob(audioUrl) {
   } catch (e) {
     console.warn('Direct fetch failed, falling back to proxy:', e);
   }
+
   if (!audioUrl.startsWith('/api/')) {
     const proxyUrl = `/api/suno-proxy?url=${encodeURIComponent(audioUrl)}`;
     const proxyRes = await fetch(proxyUrl);
@@ -1998,6 +1999,29 @@ async function fetchSunoAudioBlob(audioUrl) {
       return await proxyRes.blob();
     }
   }
+
+  // Fallback candidate URLs for Suno tracks
+  if (track && track.uuid) {
+    const candidateUrls = [
+      `https://d2lwuy8qc234o3.cloudfront.net/1/clip/${track.uuid}.m4a`,
+      `https://cdn1.suno.ai/${track.uuid}.mp4`,
+      `https://cdn1.suno.ai/${track.uuid}.mp3`,
+      `https://cdn2.suno.ai/${track.uuid}.mp3`
+    ];
+    for (const rawUrl of candidateUrls) {
+      try {
+        const pUrl = `/api/suno-proxy?url=${encodeURIComponent(rawUrl)}`;
+        const pRes = await fetch(pUrl);
+        if (pRes.ok) {
+          const b = await pRes.blob();
+          if (b.size > 1000) return b;
+        }
+      } catch (e) {
+        // continue to next fallback
+      }
+    }
+  }
+
   throw new Error(`Không thể tải file âm thanh từ Suno`);
 }
 
@@ -2006,7 +2030,7 @@ async function handleSingleTrackDownload(track, format = 'mp3', autoProcess = fa
   if (statusEl) statusEl.textContent = 'Đang tải âm thanh...';
 
   try {
-    const rawBlob = await fetchSunoAudioBlob(track.audioUrl);
+    const rawBlob = await fetchSunoAudioBlob(track.audioUrl, track);
 
     if (autoProcess) {
       if (statusEl) statusEl.textContent = 'Đang giải mã Web Audio...';
@@ -2083,7 +2107,7 @@ async function sendTrackToQueue(track) {
   if (statusEl) statusEl.textContent = 'Đang nạp vào hàng đợi...';
 
   try {
-    const rawBlob = await fetchSunoAudioBlob(track.audioUrl);
+    const rawBlob = await fetchSunoAudioBlob(track.audioUrl, track);
     const cleanFileName = sanitizeMediaFilename(track.title, 'suno', 'mp3');
     const file = new File([rawBlob], cleanFileName, { type: rawBlob.type || 'audio/mp4' });
 
