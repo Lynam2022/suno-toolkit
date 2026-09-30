@@ -10,6 +10,8 @@ pinned: false
 
 # Suno Audio Anonymization & Clarity Optimizer (chunks.md Local Edition)
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Lynam2022/suno-toolkit)
+
 Dự án dựng lại 100% giao diện, thông số cấu hình và thuật toán xử lý âm thanh từ trang [chunks.md/#suno](https://chunks.md/#suno). Ứng dụng hoạt động trực tiếp trong trình duyệt bằng Web Audio API thuần (Client-Side), không gửi bất kỳ dữ liệu nào ra máy chủ bên ngoài.
 
 ---
