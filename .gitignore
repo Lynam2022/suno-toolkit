@@ -1,6 +1,8 @@
 node_modules/
 downloads/*
 !downloads/.gitkeep
+cookies.txt
+cookies*.txt
 *.log
 .DS_Store
 Thumbs.db

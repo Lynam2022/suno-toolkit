@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Upgrade pip and install yt-dlp
-RUN pip3 install --no-cache-dir --break-system-packages -U yt-dlp
+# 2. Upgrade pip and install yt-dlp with JS challenge solver plugin (yt-dlp-ejs)
+RUN pip3 install --no-cache-dir --break-system-packages -U yt-dlp yt-dlp-ejs
 
 # 3. Setup work directory
 WORKDIR /app
