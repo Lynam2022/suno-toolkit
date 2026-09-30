@@ -39,7 +39,7 @@ def ensure_netscape_format(cookie_content):
     """
     if not cookie_content:
         return ""
-    stripped = cookie_content.strip()
+    stripped = cookie_content.strip().strip('"\'')
     if stripped.startswith('# Netscape') or stripped.startswith('# HTTP Cookie File'):
         return cookie_content
 
@@ -60,32 +60,51 @@ def ensure_netscape_format(cookie_content):
         val = val.strip()
         is_secure = 'TRUE' if key.startswith(('__Secure-', '__Host-', 'SAPISID', 'SSID', 'SID', 'LOGIN_INFO')) else 'FALSE'
         lines.append(f'.youtube.com\tTRUE\t/\t{is_secure}\t{expire}\t{key}\t{val}')
+        lines.append(f'.google.com\tTRUE\t/\t{is_secure}\t{expire}\t{key}\t{val}')
     return '\n'.join(lines) + '\n'
 
+def get_cookie_paths():
+    return [
+        os.path.join(APP_DIR, 'cookies.txt'),
+        os.path.join(CACHE_DIR, 'cookies.txt'),
+        '/tmp/yt_cookies.txt'
+    ]
+
 # Cookie management (supports local cookies.txt or YOUTUBE_COOKIES env var on Render/Cloud)
-COOKIE_FILE = os.path.join(APP_DIR, 'cookies.txt')
 if os.environ.get('YOUTUBE_COOKIES'):
     try:
-        raw_cookie = os.environ.get('YOUTUBE_COOKIES', '').strip()
+        raw_cookie = os.environ.get('YOUTUBE_COOKIES', '').strip().strip('"\'')
         if raw_cookie:
             formatted = ensure_netscape_format(raw_cookie)
-            with open(COOKIE_FILE, 'w', encoding='utf-8') as cf:
-                cf.write(formatted)
-    except Exception:
-        pass
-elif os.path.exists(COOKIE_FILE):
-    try:
-        with open(COOKIE_FILE, 'r', encoding='utf-8', errors='ignore') as cf:
-            content = cf.read()
-        if content and not content.strip().startswith('#'):
-            formatted = ensure_netscape_format(content)
-            with open(COOKIE_FILE, 'w', encoding='utf-8') as cf:
-                cf.write(formatted)
-    except Exception:
-        pass
+            for cp in get_cookie_paths():
+                try:
+                    with open(cp, 'w', encoding='utf-8') as cf:
+                        cf.write(formatted)
+                except Exception:
+                    pass
+    except Exception as ce:
+        sys.stderr.write(f"[Cookie Init Error]: {ce}\n")
+else:
+    for cp in get_cookie_paths():
+        if os.path.exists(cp):
+            try:
+                with open(cp, 'r', encoding='utf-8', errors='ignore') as cf:
+                    content = cf.read()
+                if content and not content.strip().startswith('#'):
+                    formatted = ensure_netscape_format(content)
+                    with open(cp, 'w', encoding='utf-8') as cf:
+                        cf.write(formatted)
+            except Exception:
+                pass
+
+def get_active_cookie_file():
+    for cp in get_cookie_paths():
+        if os.path.exists(cp) and os.path.getsize(cp) > 50:
+            return cp
+    return None
 
 def has_valid_cookies():
-    return os.path.exists(COOKIE_FILE) and os.path.getsize(COOKIE_FILE) > 50
+    return get_active_cookie_file() is not None
 
 def get_fallback_candidates():
     if has_valid_cookies():
@@ -93,7 +112,8 @@ def get_fallback_candidates():
             ['tv', 'mweb', 'web'],
             ['tv', 'web'],
             ['mweb', 'web'],
-            ['web']
+            ['web'],
+            ['android', 'web']
         ]
     return [
         ['android', 'web'],
@@ -151,7 +171,7 @@ def get_ydl_opts(target_format='mp3', outtmpl=None, client_list=None):
 
     # Attach cookie if exists and valid
     if has_valid_cookies():
-        opts['cookiefile'] = COOKIE_FILE
+        opts['cookiefile'] = get_active_cookie_file()
 
     if outtmpl:
         opts['outtmpl'] = outtmpl
@@ -195,7 +215,7 @@ def get_info(url):
             'js_runtimes': {'node': {}}
         }
         if has_valid_cookies():
-            opts['cookiefile'] = COOKIE_FILE
+            opts['cookiefile'] = get_active_cookie_file()
 
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:

@@ -21,7 +21,7 @@ WORKDIR /app
 COPY . /app
 
 # 5. Create storage directories with full write permissions
-RUN mkdir -p /app/downloads/yt_cache && chmod -R 777 /app/downloads
+RUN mkdir -p /app/downloads/yt_cache /tmp && chmod -R 777 /app /tmp
 
 # 6. Default environment variables (Render automatically overrides PORT)
 ENV PORT=10000
