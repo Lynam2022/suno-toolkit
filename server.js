@@ -1,0 +1,682 @@
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { spawn } = require('child_process');
+const { master: masterAudio, PRESETS: MASTER_PRESETS } = require('./master-v2');
+
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3300;
+const HOST = process.env.HOST || '0.0.0.0';
+const MIME_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.wav': 'audio/wav',
+  '.mp3': 'audio/mpeg',
+  '.m4a': 'audio/mp4',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.png': 'image/png',
+  '.webp': 'image/webp'
+};
+
+// Decrypt Suno Mango DRM protected audio stream into pristine M4A or MP4 buffer
+async function decryptSunoAudioBuffer(uuid) {
+  // 1. Check if direct unencrypted MP4 is available on Suno CDN
+  const mp4Url = `https://cdn1.suno.ai/${uuid}.mp4`;
+  try {
+    const mp4Head = await fetch(mp4Url, { method: 'HEAD' });
+    if (mp4Head.ok) {
+      const res = await fetch(mp4Url);
+      if (res.ok) {
+        return Buffer.from(await res.arrayBuffer());
+      }
+    }
+  } catch (e) {
+    // Proceed to M4A decryption
+  }
+
+  // 2. Fetch Mango License from Suno
+  const rightsRes = await fetch('https://studio-api-prod.suno.com/api/mango/rights', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    },
+    body: JSON.stringify({
+      content_params: { content_id: uuid, content_type: 'clip' }
+    })
+  });
+
+  if (!rightsRes.ok) {
+    throw new Error('Không thể lấy license giải mã từ Suno: ' + rightsRes.status);
+  }
+
+  const { key: b64Key, iv: b64Iv, glt } = await rightsRes.json();
+  const masterKey = crypto.createHash('sha256').update(Buffer.from(glt, 'utf8')).digest();
+
+  function decryptGcm(b64Data, aadString) {
+    const raw = Buffer.from(b64Data, 'base64');
+    const iv = raw.subarray(0, 12);
+    const ciphertext = raw.subarray(12, raw.length - 16);
+    const tag = raw.subarray(raw.length - 16);
+    const decipher = crypto.createDecipheriv('aes-256-gcm', masterKey, iv);
+    decipher.setAAD(Buffer.from(aadString, 'utf8'));
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  }
+
+  const ctrKey = decryptGcm(b64Key, uuid);
+  const ctrIv = decryptGcm(b64Iv, uuid);
+
+  const audioUrl = `https://d2lwuy8qc234o3.cloudfront.net/1/clip/${uuid}.m4a`;
+  const audioRes = await fetch(audioUrl, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+  });
+  if (!audioRes.ok) {
+    throw new Error('Không thể tải luồng âm thanh M4A từ Suno: ' + audioRes.status);
+  }
+  const encryptedBuf = Buffer.from(await audioRes.arrayBuffer());
+
+  const decipher = crypto.createDecipheriv('aes-128-ctr', ctrKey, ctrIv);
+  return Buffer.concat([decipher.update(encryptedBuf), decipher.final()]);
+}
+
+// Resolve Suno Track Information from any link format:
+// 1. Standard song URL: https://suno.com/song/[uuid]
+// 2. Short share link: https://suno.com/s/[sharecode] or suno.com/s/[sharecode]
+// 3. Create/editor link: https://suno.com/create?song=[uuid] or ?clip=[uuid]
+// 4. Direct CDN MP3/M4A link: https://cdn1.suno.ai/[uuid].mp3 or cloudfront.net/1/clip/[uuid].m4a
+// 5. Bare UUIDv4 string: [uuid]
+async function resolveSunoTrack(inputUrl) {
+  let cleanInput = (inputUrl || '').trim();
+  let uuid = null;
+
+  // 1. Direct UUID match anywhere in the input
+  const uuidMatch = cleanInput.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  if (uuidMatch) {
+    uuid = uuidMatch[0].toLowerCase();
+  }
+
+  // 2. If no direct UUID in string, handle Suno Shortlink (/s/<sharecode>)
+  if (!uuid) {
+    const shortMatch = cleanInput.match(/(?:https?:\/\/)?(?:www\.)?suno\.com\/s\/([a-zA-Z0-9_-]+)/i) ||
+                       cleanInput.match(/^\/?s\/([a-zA-Z0-9_-]+)/i);
+    if (shortMatch) {
+      const shareCode = shortMatch[1];
+
+      // Strategy 2A: Official Suno Internal Share Code API
+      try {
+        const apiRes = await fetch(`https://studio-api-prod.suno.com/api/share/code/${shareCode}`, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json'
+          }
+        });
+        if (apiRes.ok) {
+          const shareData = await apiRes.json();
+          if (shareData && shareData.content_id) {
+            uuid = shareData.content_id.toLowerCase();
+          }
+        }
+      } catch (e) {
+        console.warn(`[Resolve] Share API warning for ${shareCode}:`, e.message);
+      }
+
+      // Strategy 2B: HTTP 307 Redirect Location header
+      if (!uuid) {
+        try {
+          const targetUrl = cleanInput.startsWith('http') ? cleanInput : `https://${cleanInput}`;
+          const redirRes = await fetch(targetUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            },
+            redirect: 'manual'
+          });
+          const loc = redirRes.headers.get('location') || '';
+          const redirUuidM = loc.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+          if (redirUuidM) {
+            uuid = redirUuidM[0].toLowerCase();
+          }
+        } catch (e) {
+          console.warn(`[Resolve] Redirect header warning for ${cleanInput}:`, e.message);
+        }
+      }
+
+      // Strategy 2C: Follow redirect & inspect canonical / og tags
+      if (!uuid) {
+        try {
+          const targetUrl = cleanInput.startsWith('http') ? cleanInput : `https://${cleanInput}`;
+          const pageRes = await fetch(targetUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            },
+            redirect: 'follow'
+          });
+          const finalUrl = pageRes.url || '';
+          const finalUuidM = finalUrl.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+          if (finalUuidM) {
+            uuid = finalUuidM[0].toLowerCase();
+          } else {
+            const htmlText = await pageRes.text();
+            const htmlUuidM = htmlText.match(/song\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i) ||
+                              htmlText.match(/clip\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+            if (htmlUuidM) {
+              uuid = (htmlUuidM[1] || htmlUuidM[0]).toLowerCase();
+            }
+          }
+        } catch (e) {
+          console.warn(`[Resolve] Follow redirect warning for ${cleanInput}:`, e.message);
+        }
+      }
+    }
+  }
+
+  // 3. Fallback check: follow redirect for any unknown generic Suno URL
+  if (!uuid && cleanInput.includes('suno.com')) {
+    try {
+      const targetUrl = cleanInput.startsWith('http') ? cleanInput : `https://${cleanInput}`;
+      const pageRes = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
+        redirect: 'follow'
+      });
+      const finalUrl = pageRes.url || '';
+      const finalUuidM = finalUrl.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+      if (finalUuidM) {
+        uuid = finalUuidM[0].toLowerCase();
+      } else {
+        const htmlText = await pageRes.text();
+        const htmlUuidM = htmlText.match(/song\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i) ||
+                          htmlText.match(/clip\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+        if (htmlUuidM) {
+          uuid = (htmlUuidM[1] || htmlUuidM[0]).toLowerCase();
+        }
+      }
+    } catch (e) {
+      console.warn(`[Resolve] Generic redirect warning for ${cleanInput}:`, e.message);
+    }
+  }
+
+  if (!uuid) {
+    throw new Error(`Không tìm thấy bài hát từ link: "${cleanInput}". Link có thể không đúng cú pháp hoặc bài hát đã bị xóa trên Suno.`);
+  }
+
+  const pageUrl = `https://suno.com/song/${uuid}`;
+  let title = `Suno Track - ${uuid.substring(0, 8)}`;
+  let image = `https://cdn2.suno.ai/${uuid}.jpeg`;
+  let audioUrl = `https://d2lwuy8qc234o3.cloudfront.net/1/clip/${uuid}.m4a`;
+  let artist = 'Suno AI';
+
+  try {
+    const res = await fetch(pageUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      }
+    });
+    if (res.ok) {
+      const html = await res.text();
+      const titleM = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i) ||
+                     html.match(/<title>([^<]+)<\/title>/i);
+      if (titleM) {
+        title = titleM[1].replace(/\s*\|\s*Suno\s*$/i, '').trim();
+      }
+      const imgM = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
+      if (imgM) {
+        image = imgM[1];
+      }
+      const audioM = html.match(/https?:\/\/[^\s"'<>]+\/1\/clip\/[0-9a-f-]+\.(?:m4a|mp3)/i);
+      if (audioM) {
+        audioUrl = audioM[0];
+      }
+      const descM = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
+      if (descM && descM[1]) {
+        const byM = descM[1].match(/by\s+([^,.]+)/i);
+        if (byM) artist = byM[1].trim();
+      }
+    }
+  } catch (err) {
+    console.warn(`[Resolve] Metadata warning for ${uuid}, using CloudFront clip:`, err.message);
+  }
+
+  const localAudioUrl = `/api/suno-audio?uuid=${uuid}&format=mp3&preset=pop`;
+
+  return {
+    uuid,
+    title,
+    artist,
+    image,
+    audioUrl: localAudioUrl,
+    cdnMp4: `https://cdn1.suno.ai/${uuid}.mp4`,
+    cdnMp3: localAudioUrl,
+    cdnWav: `/api/suno-audio?uuid=${uuid}&format=wav&preset=pop`,
+    pageUrl
+  };
+}
+
+function runYtDownloader(action, url, format = 'mp3') {
+  return new Promise((resolve, reject) => {
+    const pythonScript = path.join(__dirname, 'yt_downloader.py');
+    const pythonCmd = process.env.PYTHON_BIN || (process.platform === 'win32' ? 'python' : 'python3');
+    const proc = spawn(pythonCmd, [pythonScript, action, url, format], {
+      cwd: __dirname,
+      env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    proc.stdout.on('data', data => { stdout += data.toString('utf8'); });
+    proc.stderr.on('data', data => { stderr += data.toString('utf8'); });
+
+    proc.on('close', code => {
+      try {
+        const jsonMatch = stdout.match(/\{[\s\S]*"success"[\s\S]*\}/);
+        if (jsonMatch) {
+          const json = JSON.parse(jsonMatch[0]);
+          if (json.success) {
+            resolve(json);
+            return;
+          } else {
+            reject(new Error(json.error || stderr || `Process failed with code ${code}`));
+            return;
+          }
+        }
+        const lines = stdout.trim().split(/\r?\n/).filter(Boolean);
+        const lastLine = lines[lines.length - 1] || '{}';
+        const json = JSON.parse(lastLine);
+        if (json.success) {
+          resolve(json);
+        } else {
+          reject(new Error(json.error || stderr || `Process failed with code ${code}`));
+        }
+      } catch (err) {
+        reject(new Error(stderr || stdout || err.message));
+      }
+    });
+
+    proc.on('error', err => {
+      reject(err);
+    });
+  });
+}
+
+const server = http.createServer(async (req, res) => {
+  const parsedUrlObj = new URL(req.url, `http://${req.headers.host || '127.0.0.1:3300'}`);
+  const pathname = parsedUrlObj.pathname;
+
+  // CORS headers for all responses
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Range');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, Content-Length, X-Track-Title, X-Track-Id, X-Track-Duration, X-Track-Filename');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  // 0. API: YouTube Audio Downloader & Resolver
+  if (pathname === '/api/yt-download') {
+    const urlParam = parsedUrlObj.searchParams.get('url');
+    const formatParam = (parsedUrlObj.searchParams.get('format') || 'mp3').toLowerCase();
+    if (!urlParam) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: false, error: 'Thiếu tham số url YouTube' }));
+      return;
+    }
+    try {
+      const result = await runYtDownloader('download', urlParam, formatParam);
+      if (!fs.existsSync(result.filepath)) {
+        throw new Error('Tệp âm thanh không tồn tại sau khi tải: ' + result.filepath);
+      }
+      const stat = fs.statSync(result.filepath);
+      const mime = formatParam === 'wav' ? 'audio/wav' : 'audio/mpeg';
+
+      res.writeHead(200, {
+        'Content-Type': mime,
+        'Content-Length': stat.size,
+        'Accept-Ranges': 'bytes',
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(result.filename || 'youtube_audio.' + formatParam)}"`,
+        'X-Track-Title': encodeURIComponent(result.title || 'YouTube Audio'),
+        'X-Track-Id': result.id || '',
+        'X-Track-Duration': result.duration || 0,
+        'X-Track-Filename': encodeURIComponent(result.filename || 'youtube_audio.' + formatParam),
+        'Access-Control-Allow-Origin': '*'
+      });
+      fs.createReadStream(result.filepath).pipe(res);
+    } catch (err) {
+      console.error('[YT Download Error]:', err);
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+    return;
+  }
+
+  // API: Cleanup YouTube downloaded audio cache (dọn rác các file tạm YouTube)
+  if (pathname === '/api/yt-cleanup') {
+    try {
+      const ytCacheDir = path.join(__dirname, 'downloads', 'yt_cache');
+      let deletedCount = 0;
+      let freedBytes = 0;
+
+      if (fs.existsSync(ytCacheDir)) {
+        const files = fs.readdirSync(ytCacheDir);
+        for (const file of files) {
+          const filePath = path.join(ytCacheDir, file);
+          try {
+            const stat = fs.statSync(filePath);
+            if (stat.isFile()) {
+              freedBytes += stat.size;
+              fs.unlinkSync(filePath);
+              deletedCount++;
+            }
+          } catch (e) {
+            console.warn(`[Cleanup Warning] Could not remove ${filePath}:`, e.message);
+          }
+        }
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({
+        success: true,
+        deletedCount,
+        freedBytes,
+        freedMB: (freedBytes / (1024 * 1024)).toFixed(2)
+      }));
+    } catch (err) {
+      console.error('[YT Cleanup Error]:', err);
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+    return;
+  }
+
+  if (pathname === '/api/yt-info') {
+    const urlParam = parsedUrlObj.searchParams.get('url');
+    if (!urlParam) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: false, error: 'Thiếu tham số url' }));
+      return;
+    }
+    try {
+      const info = await runYtDownloader('info', urlParam);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(info));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+    return;
+  }
+
+  if (pathname === '/api/yt-resolve') {
+    const parseYtUrls = (text) => {
+      if (!text) return [];
+      const regex = /(?:https?:\/\/)?(?:www\.|m\.|music\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|v\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/gi;
+      const matches = [];
+      let m;
+      while ((m = regex.exec(text)) !== null) {
+        matches.push({
+          id: m[1],
+          url: `https://www.youtube.com/watch?v=${m[1]}`
+        });
+      }
+      const seen = new Set();
+      return matches.filter(item => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      });
+    };
+
+    if (req.method === 'GET') {
+      const urlParam = parsedUrlObj.searchParams.get('url') || parsedUrlObj.searchParams.get('text');
+      const items = parseYtUrls(urlParam);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true, count: items.length, items }));
+      return;
+    } else if (req.method === 'POST') {
+      let bodyStr = '';
+      req.on('data', chunk => { bodyStr += chunk; });
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(bodyStr || '{}');
+          let text = '';
+          if (Array.isArray(data.urls)) {
+            text = data.urls.join('\n');
+          } else if (data.text) {
+            text = data.text;
+          } else if (data.url) {
+            text = data.url;
+          }
+          const items = parseYtUrls(text);
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ success: true, count: items.length, items }));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ success: false, error: 'Lỗi parse JSON: ' + e.message }));
+        }
+      });
+      return;
+    }
+  }
+
+  // 1. API: Suno Track Resolver (/api/suno-resolve)
+  if (pathname === '/api/suno-resolve') {
+    if (req.method === 'GET') {
+      const urlParam = parsedUrlObj.searchParams.get('url');
+      if (!urlParam) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ success: false, error: 'Thiếu tham số url' }));
+        return;
+      }
+      try {
+        const track = await resolveSunoTrack(urlParam);
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ success: true, track }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    } else if (req.method === 'POST') {
+      let bodyStr = '';
+      req.on('data', chunk => { bodyStr += chunk; });
+      req.on('end', async () => {
+        try {
+          const data = JSON.parse(bodyStr || '{}');
+          let urls = [];
+          if (Array.isArray(data.urls)) {
+            urls = data.urls;
+          } else if (data.url) {
+            urls = [data.url];
+          } else if (data.text) {
+            urls = data.text.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
+          }
+
+          if (urls.length === 0) {
+            res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({ success: false, error: 'Không tìm thấy link nào trong yêu cầu' }));
+            return;
+          }
+
+          const results = await Promise.allSettled(urls.map(u => resolveSunoTrack(u)));
+          const tracks = [];
+          const errors = [];
+
+          results.forEach((r, idx) => {
+            if (r.status === 'fulfilled') {
+              tracks.push(r.value);
+            } else {
+              errors.push({ url: urls[idx], error: r.reason ? r.reason.message : 'Lỗi phân tích' });
+            }
+          });
+
+          const isSuccess = tracks.length > 0;
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: isSuccess,
+            error: isSuccess ? null : (errors[0] ? errors[0].error : 'Không thể tìm thấy bài hát nào từ danh sách link'),
+            tracks,
+            errors,
+            total: urls.length,
+            resolved: tracks.length
+          }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ success: false, error: 'Lỗi parse JSON: ' + err.message }));
+        }
+      });
+      return;
+    }
+  }
+
+  // 2. API: Audio Stream Proxy (/api/suno-proxy?url=...)
+  if (pathname === '/api/suno-proxy') {
+    const targetUrl = parsedUrlObj.searchParams.get('url');
+    if (!targetUrl) {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('Missing url param');
+      return;
+    }
+
+    try {
+      const remoteRes = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+
+      if (!remoteRes.ok) {
+        res.writeHead(remoteRes.status, { 'Content-Type': 'text/plain' });
+        res.end(`Remote error: ${remoteRes.statusText}`);
+        return;
+      }
+
+      const contentType = remoteRes.headers.get('content-type') || 'audio/mp4';
+      const contentLength = remoteRes.headers.get('content-length');
+
+      const headers = {
+        'Content-Type': contentType,
+        'Access-Control-Allow-Origin': '*'
+      };
+      if (contentLength) headers['Content-Length'] = contentLength;
+
+      res.writeHead(200, headers);
+      const reader = remoteRes.body.getReader();
+
+      const pump = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            res.write(Buffer.from(value));
+          }
+          res.end();
+        } catch (pumpErr) {
+          res.end();
+        }
+      };
+      await pump();
+      return;
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end(`Proxy fetch failed: ${err.message}`);
+      return;
+    }
+  }
+
+  // 3. API: Suno Direct Master Audio Stream with Auto-Mastering Engine (/api/suno-audio)
+  if (pathname === '/api/suno-audio') {
+    const uuid = parsedUrlObj.searchParams.get('uuid');
+    const format = parsedUrlObj.searchParams.get('format') || 'mp3';
+    const preset = parsedUrlObj.searchParams.get('preset') || parsedUrlObj.searchParams.get('genre') || 'pop';
+
+    if (!uuid || !/^[0-9a-f-]{36}$/i.test(uuid)) {
+      res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Missing or invalid uuid parameter');
+      return;
+    }
+
+    const cacheDir = path.join(__dirname, 'downloads', 'suno_cache');
+    if (!fs.existsSync(cacheDir)) {
+      fs.mkdirSync(cacheDir, { recursive: true });
+    }
+    const cachedFile = path.join(cacheDir, `${uuid}_${preset}.${format}`);
+
+    if (fs.existsSync(cachedFile)) {
+      const stat = fs.statSync(cachedFile);
+      const mime = format === 'wav' ? 'audio/wav' : 'audio/mpeg';
+      res.writeHead(200, {
+        'Content-Type': mime,
+        'Content-Length': stat.size,
+        'Accept-Ranges': 'bytes',
+        'Access-Control-Allow-Origin': '*'
+      });
+      const stream = fs.createReadStream(cachedFile);
+      stream.pipe(res);
+      return;
+    }
+
+    try {
+      const rawAudioBuffer = await decryptSunoAudioBuffer(uuid);
+      const tempInput = path.join(cacheDir, `${uuid}_raw.m4a`);
+      fs.writeFileSync(tempInput, rawAudioBuffer);
+
+      await masterAudio(tempInput, cachedFile, preset, format);
+
+      if (fs.existsSync(tempInput)) {
+        try { fs.unlinkSync(tempInput); } catch (e) {}
+      }
+
+      if (fs.existsSync(cachedFile)) {
+        const stat = fs.statSync(cachedFile);
+        const mime = format === 'wav' ? 'audio/wav' : 'audio/mpeg';
+        res.writeHead(200, {
+          'Content-Type': mime,
+          'Content-Length': stat.size,
+          'Accept-Ranges': 'bytes',
+          'Access-Control-Allow-Origin': '*'
+        });
+        fs.createReadStream(cachedFile).pipe(res);
+      } else {
+        throw new Error('Không tạo được file master sau xử lý');
+      }
+    } catch (err) {
+      console.error(`[AutoMaster Error] ${uuid}:`, err);
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end(`Lỗi xử lý auto-mastering: ${err.message}`);
+    }
+    return;
+  }
+
+  // 4. Static File Server
+  let parsedUrl = parsedUrlObj.pathname;
+  if (parsedUrl === '/') parsedUrl = '/index.html';
+  const filePath = path.join(__dirname, decodeURIComponent(parsedUrl));
+
+  fs.stat(filePath, (err, stats) => {
+    if (err || !stats.isFile()) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('404 Not Found');
+      return;
+    }
+
+    const ext = path.extname(filePath).toLowerCase();
+    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+    res.writeHead(200, {
+      'Content-Type': contentType,
+      'Access-Control-Allow-Origin': '*'
+    });
+    fs.createReadStream(filePath).pipe(res);
+  });
+});
+
+server.listen(PORT, HOST, () => {
+  console.log(`Server running at http://${HOST === '0.0.0.0' ? '127.0.0.1' : HOST}:${PORT}/`);
+});

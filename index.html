@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suno Audio Anonymization & Optimizer — chunks.md Recreated</title>
+  <meta name="description" content="Công cụ xử lý, tối ưu và ẩn danh âm thanh cho Suno AI trực tiếp trên trình duyệt bằng Web Audio API. 100% bảo mật, xử lý tại máy của bạn.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=2">
+  <link rel="alternate icon" href="favicon.ico?v=2">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <link rel="stylesheet" href="style.css">
+  <script src="vendor/lame.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- Header with Top Navigation Bar -->
+    <header class="app-header">
+      <div class="header-nav-bar">
+        <div class="header-brand">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="12" cy="12" r="10"/>
+            <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/>
+          </svg>
+          <span class="brand-title">Suno Master Studio</span>
+        </div>
+
+        <!-- Navigation Tabs: Audio Anonymization & Suno Downloader -->
+        <nav class="nav-tabs" role="tablist">
+          <button type="button" class="nav-tab-btn active" id="tabBtnAnonymize" role="tab" aria-selected="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12h5l2-7 4 14 3-7h6"/>
+            </svg>
+            <span>Audio Anonymization</span>
+          </button>
+          <button type="button" class="nav-tab-btn" id="tabBtnDownloader" role="tab" aria-selected="false">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span>Suno Downloader</span>
+            <span class="badge-tab-highlight">Tải MP3/WAV</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="header-titles">
+        <h1 id="pageMainHeading">Suno Audio Anonymization</h1>
+        <p class="subtitle" id="pageSubHeading">Điều chỉnh âm thanh trước khi nhập vào Suno AI. Tối ưu hóa để vượt qua bộ lọc nhận diện bản quyền và cải thiện độ nét của âm thanh.</p>
+      </div>
+    </header>
+
+    <!-- 1. Audio Anonymization View (Main Card) -->
+    <div class="main-card tab-view active" id="viewAnonymize">
+      <!-- YouTube Batch Downloader & Auto-Queue Section (Directly Above Dropzone) -->
+      <div class="youtube-batch-card" id="youtubeBatchCard">
+        <div class="yt-header">
+          <div class="yt-title-group">
+            <div class="yt-badge">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <rect width="24" height="24" rx="6" fill="#FF0000"/>
+                <polygon points="9.5 7.5 16.5 12 9.5 16.5" fill="#FFFFFF"/>
+              </svg>
+              <span>YouTube Batch Downloader</span>
+            </div>
+            <span class="yt-subtitle">Dán loạt link YouTube để tự động tải âm thanh theo thứ tự và tự động nạp vào hàng đợi</span>
+          </div>
+          <div class="yt-quick-actions">
+            <button type="button" class="btn-yt-quick" id="btnYtPasteClipboard" title="Dán nội dung từ Clipboard">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+              <span>Dán Clipboard</span>
+            </button>
+            <button type="button" class="btn-yt-quick" id="btnYtSampleLinks" title="Thử với link mẫu">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              <span>Link mẫu</span>
+            </button>
+            <button type="button" class="btn-yt-quick danger" id="btnYtClear" title="Xóa toàn bộ">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              <span>Xóa</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="yt-input-wrapper">
+          <textarea id="txtYoutubeLinks" class="yt-textarea" rows="5" placeholder="Dán danh sách link YouTube vào đây (nhập 1 hoặc nhiều link, mỗi dòng một link hoặc cách nhau bằng dấu cách)...&#10;Ví dụ:&#10;https://www.youtube.com/watch?v=dQw4w9WgXcQ&#10;https://youtu.be/jNQXAC9IVRw"></textarea>
+          <div class="yt-input-meta">
+            <span class="yt-hints">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              Hỗ trợ: <code>youtube.com/watch?v=...</code> • <code>youtu.be/...</code> • <code>/shorts/...</code> • <code>music.youtube.com</code>
+            </span>
+            <span id="ytLinkCountBadge" class="yt-link-count">0 link YouTube hợp lệ</span>
+          </div>
+        </div>
+
+        <!-- YouTube Batch Control & Options Bar -->
+        <div class="yt-controls-bar">
+          <div class="yt-options-left">
+            <div class="yt-opt-item">
+              <label for="selYtAudioFormat" class="yt-opt-label">Định dạng:</label>
+              <select id="selYtAudioFormat" class="select-sm yt-select">
+                <option value="mp3" selected>MP3 (320 kbps Studio)</option>
+                <option value="wav">WAV (24-bit Lossless)</option>
+              </select>
+            </div>
+            <label class="checkbox-row yt-checkbox" for="chkYtAutoCleanup" style="margin-bottom:0;" title="Tự động xóa sạch các file âm thanh tạm YouTube trên máy chủ sau khi xử lý xong toàn bộ hàng đợi">
+              <input type="checkbox" id="chkYtAutoCleanup" checked>
+              <span>Tự động dọn rác YouTube sau khi xử lý xong</span>
+            </label>
+            <button type="button" class="btn-yt-cleanup" id="btnYtCleanupCache" title="Dọn sạch bộ nhớ đệm các file âm thanh YouTube tải về trên máy chủ">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              <span>Dọn rác YouTube</span>
+            </button>
+          </div>
+
+          <div class="yt-actions-right">
+            <button type="button" class="btn-yt-start" id="btnStartBatchYoutube" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span id="btnStartBatchYoutubeLabel">Tải âm thanh & Thêm vào hàng đợi</span>
+            </button>
+            <button type="button" class="btn-yt-abort" id="btnAbortBatchYoutube" style="display:none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <rect width="14" height="14" x="5" y="5" rx="2" ry="2"/>
+              </svg>
+              <span>Hủy tải</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- YouTube Batch Download Real-time Progress Card -->
+        <div class="yt-progress-container" id="ytProgressContainer" style="display:none;">
+          <div class="yt-progress-header">
+            <div class="yt-progress-info">
+              <svg class="spin-icon" id="ytSpinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+              </svg>
+              <span id="ytProgressStatusTitle" class="yt-progress-title">Đang chuẩn bị tải...</span>
+            </div>
+            <span id="ytProgressPct" class="yt-progress-pct">0%</span>
+          </div>
+          <div class="yt-progress-bar-track">
+            <div class="yt-progress-bar-fill" id="ytProgressBarFill" style="width:0%;"></div>
+          </div>
+          <!-- Sequential Item Status List -->
+          <div class="yt-items-status-list" id="ytItemsStatusList"></div>
+        </div>
+      </div>
+
+      <!-- Divider / Or Text -->
+      <div class="yt-or-dropzone-divider">
+        <span>HOẶC KÉO THẢ TỆP ÂM THANH CÓ SẴN TRÊN MÁY</span>
+      </div>
+
+      <!-- File Upload Area (Multiple Files Supported) -->
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept=".mp3,.wav,.ogg,.flac,.m4a,.aac,.webm" multiple style="display:none;">
+        <div class="dropzone-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+        </div>
+        <div class="dropzone-title">Kéo & thả file âm thanh vào đây hoặc nhấp để chọn</div>
+        <div class="dropzone-hint">Hỗ trợ chọn hoặc kéo thả nhiều file cùng lúc (MP3, WAV, OGG, FLAC, M4A, AAC, WebM) • Xử lý 100% tại máy</div>
+      </div>
+
+      <!-- Batch Queue Section (Multi-File Queue List) -->
+      <div class="batch-queue-card" id="batchQueueSection" style="display:none;">
+        <div class="queue-header">
+          <div class="queue-summary">
+            <span class="queue-title">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                <rect x="9" y="3" width="6" height="4" rx="1"/>
+                <path d="m9 14 2 2 4-4"/>
+              </svg>
+              Danh sách hàng đợi
+            </span>
+            <span class="queue-count-badge" id="queueCountBadge">0 tệp • 0.0 MB</span>
+          </div>
+          <div class="queue-actions">
+            <button type="button" class="btn-queue-action" id="btnAddFiles">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Thêm file
+            </button>
+            <button type="button" class="btn-queue-action danger" id="btnClearQueue">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              Xóa tất cả
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Queue List Items -->
+        <div class="queue-list" id="queueList"></div>
+
+        <!-- Sequential Auto-Download Toggle Bar -->
+        <div class="queue-options-row">
+          <label class="checkbox-row" for="chkAutoDownload" style="margin-bottom:0; flex:1;">
+            <input type="checkbox" id="chkAutoDownload">
+            <div>
+              <span class="checkbox-title">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                Tự động tải về máy khi xử lý xong
+              </span>
+              <span class="checkbox-desc">Tải tuần tự an toàn, chuẩn tên file ≤ 80 ký tự.</span>
+            </div>
+          </label>
+          <div class="auto-download-format">
+            <label for="selAutoDownloadFormat" style="font-size:0.75rem; color:var(--text-muted); font-weight:600; white-space:nowrap;">Định dạng:</label>
+            <select id="selAutoDownloadFormat" class="select-sm">
+              <option value="wav" selected>WAV Master (Lossless)</option>
+              <option value="mp3">MP3 (320 kbps Studio)</option>
+              <option value="both">Cả MP3 và WAV</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clarity Mode Quick Action Banner -->
+      <div class="clarity-badge">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        <span><strong>Chế độ âm thanh rõ nét:</strong> Giữ nguyên giọng hát sạch sẽ 100%, 48kHz, 320 kbps chuẩn Master + Đảo/dịch nhẹ 3 vùng phá vỡ kiểm duyệt.</span>
+        <button class="btn-clarity-mode" id="btnClarityMode">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          Áp dụng nhanh
+        </button>
+      </div>
+
+      <!-- Preset Selector -->
+      <div class="section-label">
+        <span>PRESET MẪU</span>
+        <span style="font-size: 0.72rem; color: var(--text-dim);">Chọn cấu hình mong muốn</span>
+      </div>
+      <div class="presets-grid">
+        <button type="button" class="preset-btn active" data-preset="subtle">
+          <span>Subtle</span>
+          <span class="preset-sub">Tinh tế • Nhẹ</span>
+        </button>
+        <button type="button" class="preset-btn" data-preset="moderate">
+          <span>Moderate</span>
+          <span class="preset-sub">Tiêu chuẩn</span>
+        </button>
+        <button type="button" class="preset-btn" data-preset="aggressive">
+          <span>Aggressive</span>
+          <span class="preset-sub">Mạnh mẽ</span>
+        </button>
+        <button type="button" class="preset-btn" data-preset="instrumental">
+          <span>Instrumental</span>
+          <span class="preset-sub">Tách Beat</span>
+        </button>
+      </div>
+
+      <!-- Checkbox Instrumental -->
+      <label class="checkbox-row" for="chkIsInstrumental">
+        <input type="checkbox" id="chkIsInstrumental">
+        <div>
+          <span class="checkbox-title">Bài hát này là bản nhạc không lời (No vocals)</span>
+          <span class="checkbox-desc">Bỏ qua quá trình nhận diện giọng hát và bypass lời bài hát để tiết kiệm thời gian.</span>
+        </div>
+      </label>
+
+      <!-- Advanced Settings Accordion (Collapsed by default) -->
+      <div class="accordion" id="accordion">
+        <div class="accordion-header" id="accordionHeader">
+          <div class="accordion-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            Advanced settings (Thiết lập chuyên sâu)
+          </div>
+          <svg class="accordion-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+
+        <div class="accordion-body">
+          <div class="settings-grid">
+            <!-- Instrumental Mode -->
+            <div class="form-group col-span-2">
+              <label class="form-label">
+                <span>Chế độ Instrumental only</span>
+              </label>
+              <div class="button-group">
+                <button type="button" class="group-btn inst-mode-btn" data-mode="off">Off (Giữ giọng hát)</button>
+                <button type="button" class="group-btn inst-mode-btn active" data-mode="light">Light (Triệt tiêu kênh trung tâm)</button>
+                <button type="button" class="group-btn inst-mode-btn" data-mode="hard">Hard (Tách beat sâu)</button>
+              </div>
+              <div class="form-desc">Light = center-channel vocal cancel (nhanh, xử lý trực tiếp trên trình duyệt, vượt qua bộ lọc Suno).</div>
+            </div>
+
+            <!-- Pitch Shift -->
+            <div class="form-group">
+              <label class="form-label" for="inputPitch">
+                <span>Pitch (semitones)</span>
+                <span class="form-val-badge" id="valPitch">0 st</span>
+              </label>
+              <input type="range" id="inputPitch" min="-12" max="12" step="0.5" value="0">
+              <div class="form-desc">Dịch chuyển cao độ bài hát (0 = giữ nguyên tone gốc, nghe tự nhiên nhất).</div>
+            </div>
+
+            <!-- Tempo -->
+            <div class="form-group">
+              <label class="form-label" for="inputTempo">
+                <span>Tempo (%, 100 = nguyên bản)</span>
+                <span class="form-val-badge" id="valTempo">100%</span>
+              </label>
+              <input type="range" id="inputTempo" min="50" max="200" step="1" value="100">
+              <div class="form-desc">Co giãn tốc độ giữ nguyên cao độ (100% = giữ nguyên nhịp, không bị nhòe pha âm thanh).</div>
+            </div>
+
+            <!-- Sample rate -->
+            <div class="form-group">
+              <label class="form-label" for="inputSampleRate">
+                <span>Sample rate (Hz, blank = keep original)</span>
+              </label>
+              <input type="number" id="inputSampleRate" min="8000" max="96000" step="1000" value="48000">
+              <div class="form-desc">Tần số lấy mẫu (48000 Hz chuẩn studio chất lượng cao).</div>
+            </div>
+
+            <!-- EQ Notch -->
+            <div class="form-group">
+              <label class="form-label" for="inputEqNotch">
+                <span>EQ notch (Hz, blank = off)</span>
+              </label>
+              <input type="number" id="inputEqNotch" min="50" max="20000" step="10" placeholder="vd: 300" value="">
+              <div class="form-desc">Bộ lọc cắt bỏ tần số hẹp cố định.</div>
+            </div>
+
+            <!-- Reverb Wet -->
+            <div class="form-group">
+              <label class="form-label" for="inputReverb">
+                <span>Reverb wet (%)</span>
+                <span class="form-val-badge" id="valReverb">0%</span>
+              </label>
+              <input type="range" id="inputReverb" min="0" max="100" step="1" value="0">
+              <div class="form-desc">Độ vang vọng nhân tạo (0% = âm thanh khô, sắc nét và sạch sẽ nhất).</div>
+            </div>
+
+            <!-- Silence pad -->
+            <div class="form-group">
+              <label class="form-label" for="inputSilence">
+                <span>Silence pad (s)</span>
+                <span class="form-val-badge" id="valSilence">0s</span>
+              </label>
+              <input type="range" id="inputSilence" min="0" max="10" step="0.1" value="0">
+              <div class="form-desc">Thêm khoảng im lặng ở đầu file trước khi nhạc bắt đầu.</div>
+            </div>
+
+            <!-- MP3 Round-trip Bitrate -->
+            <div class="form-group">
+              <label class="form-label" for="inputMp3Bitrate">
+                <span>MP3 round-trip bitrate (kbps, blank = off)</span>
+                <span class="form-val-badge" id="valMp3Bitrate">320 kbps</span>
+              </label>
+              <input type="range" id="inputMp3Bitrate" min="32" max="320" step="16" value="320">
+              <div class="form-desc">Mã hóa nén vòng để làm xáo trộn đỉnh phổ (320 kbps giữ trọn dải treble leng keng).</div>
+            </div>
+
+            <!-- MP3 VBR Mode Checkbox -->
+            <div class="form-group">
+              <label class="checkbox-row" for="chkMp3Vbr" style="margin-bottom:0; height:100%; display:flex; align-items:center;">
+                <input type="checkbox" id="chkMp3Vbr">
+                <div>
+                  <span class="checkbox-title">MP3 round-trip: VBR mode</span>
+                  <span class="checkbox-desc">Khác biệt phân bổ bit so với CBR ở cùng bitrate.</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- EQ Tilt Max -->
+            <div class="form-group">
+              <label class="form-label" for="inputEqTiltMax">
+                <span>EQ tilt max ±dB (0 = off)</span>
+                <span class="form-val-badge" id="valEqTiltMax">±0 dB</span>
+              </label>
+              <input type="range" id="inputEqTiltMax" min="0" max="6" step="0.5" value="0">
+              <div class="form-desc">Mức độ biến dạng âm sắc ngẫu nhiên qua các dải tần số.</div>
+            </div>
+
+            <!-- EQ Tilt Bands -->
+            <div class="form-group">
+              <label class="form-label" for="inputEqTiltBands">
+                <span>EQ tilt bands (0 = off)</span>
+                <span class="form-val-badge" id="valEqTiltBands">0</span>
+              </label>
+              <input type="range" id="inputEqTiltBands" min="0" max="12" step="1" value="0">
+            </div>
+
+            <!-- Full-mix pitch jitter -->
+            <div class="form-group">
+              <label class="form-label" for="inputFullJitter">
+                <span>Full-mix pitch jitter (cents, 0 = off)</span>
+                <span class="form-val-badge" id="valFullJitter">±0¢</span>
+              </label>
+              <input type="range" id="inputFullJitter" min="0" max="50" step="1" value="0">
+              <div class="form-desc">Rung nhẹ cao độ toàn bài (0 = pitch ổn định tuyệt đối).</div>
+              <input type="hidden" id="inputFullJitterHz" value="0">
+            </div>
+
+            <!-- Side-channel jitter -->
+            <div class="form-group">
+              <label class="form-label" for="inputSideJitter">
+                <span>Side-channel jitter (cents, 0 = off)</span>
+                <span class="form-val-badge" id="valSideJitter">±0¢</span>
+              </label>
+              <input type="range" id="inputSideJitter" min="0" max="50" step="1" value="0">
+              <div class="form-desc">M/S jitter — perturbs the L-R difference only. Inaudible but breaks stereo fingerprints.</div>
+              <input type="hidden" id="inputSideJitterHz" value="0">
+            </div>
+
+            <!-- Peak Smear Bands -->
+            <div class="form-group col-span-2">
+              <div style="display:flex; gap:12px;">
+                <div style="flex:1;">
+                  <label class="form-label">Peak smear bands (0 = off)</label>
+                  <input type="number" id="inputPeakSmearBands" min="0" max="12" value="0">
+                </div>
+                <div style="flex:1;">
+                  <label class="form-label">Peak smear depth (dB)</label>
+                  <input type="number" id="inputPeakSmearDepth" min="0" max="6" step="0.5" value="0">
+                </div>
+                <div style="flex:1;">
+                  <label class="form-label">Peak smear LFO (Hz)</label>
+                  <input type="number" id="inputPeakSmearHz" min="0" max="2" step="0.05" value="0">
+                </div>
+              </div>
+            </div>
+
+            <!-- Sub-Audio Inject -->
+            <div class="form-group col-span-2">
+              <div style="display:flex; gap:12px;">
+                <div style="flex:1;">
+                  <label class="form-label">Sub-audio inject (Hz, 0 = off)</label>
+                  <input type="number" id="inputDcSubHz" min="0" max="20" step="1" value="0">
+                </div>
+                <div style="flex:1;">
+                  <label class="form-label">Sub-audio inject gain (dB)</label>
+                  <input type="number" id="inputDcGain" min="-90" max="-30" step="1" value="-60">
+                </div>
+              </div>
+            </div>
+
+            <!-- Three-Zone Micro Inversion & Shift (Đảo & Dịch nhẹ 3 vùng: Đầu • Giữa • Cuối) -->
+            <div class="form-group col-span-2 three-zone-card">
+              <div class="three-zone-header">
+                <label class="checkbox-row" for="chkThreeZoneShift" style="margin-bottom:0; flex:1;">
+                  <input type="checkbox" id="chkThreeZoneShift" checked>
+                  <div>
+                    <span class="checkbox-title">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:text-bottom; margin-right:4px; color:var(--primary);">
+                        <path d="M2 12h5l2-7 4 14 3-7h6"/>
+                      </svg>
+                      Đảo & Dịch nhẹ 3 vùng (Đầu • Giữa • Cuối bài)
+                    </span>
+                    <span class="checkbox-desc">Xử lý âm thanh sạch sẽ 100% như file gốc, chỉ đảo pha vi mô và dịch thời gian cực nhẹ tại 3 điểm nhạy cảm để phá vỡ nhận diện bản quyền Suno.</span>
+                  </div>
+                </label>
+                <span class="badge-subtle" id="badgeThreeZoneStatus">Đang bật (Sạch gốc)</span>
+              </div>
+              <div class="three-zone-body" id="threeZoneControls">
+                <div class="three-zone-options-grid">
+                  <div class="tz-col">
+                    <label class="form-label" for="selThreeZoneIntensity">
+                      <span>Cường độ dịch & đảo</span>
+                      <span class="form-val-badge" id="valThreeZoneIntensity">Nhẹ (Khuyên dùng)</span>
+                    </label>
+                    <select id="selThreeZoneIntensity" class="select-sm">
+                      <option value="subtle" selected>Nhẹ (Khuyên dùng • Giữ 100% độ sạch)</option>
+                      <option value="moderate">Vừa phải (Bypass nâng cao)</option>
+                      <option value="strong">Mạnh (Phá vỡ tối đa)</option>
+                    </select>
+                  </div>
+                  <div class="tz-col">
+                    <label class="form-label"><span>Vị trí kích hoạt</span></label>
+                    <div class="tz-checkbox-group">
+                      <label class="tz-check-item">
+                        <input type="checkbox" id="chkZoneHead" checked>
+                        <span>Đầu bài (Intro)</span>
+                      </label>
+                      <label class="tz-check-item">
+                        <input type="checkbox" id="chkZoneMid" checked>
+                        <span>Giữa bài (Mid)</span>
+                      </label>
+                      <label class="tz-check-item">
+                        <input type="checkbox" id="chkZoneTail" checked>
+                        <span>Cuối bài (Outro)</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Normalize Peak -->
+            <div class="form-group col-span-2">
+              <label class="checkbox-row" for="chkNormalize" style="margin-bottom:0;">
+                <input type="checkbox" id="chkNormalize" checked>
+                <div>
+                  <span class="checkbox-title">Normalize peak to 1.0 (Chuẩn hóa âm lượng đỉnh)</span>
+                  <span class="checkbox-desc">Khuếch đại âm lượng to rõ tối đa mà hoàn toàn không bị vỡ tiếng (clipping).</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- Auto-detect Vocals -->
+            <div class="form-group col-span-2">
+              <label class="checkbox-row" for="chkAutoDetect" style="margin-bottom:0;">
+                <input type="checkbox" id="chkAutoDetect">
+                <div>
+                  <span class="checkbox-title">Auto-detect vocals before lyric bypass</span>
+                  <span class="checkbox-desc">Runs a fast built-in detector (no download, works on mobile) on the decoded audio.</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- Lyric-detection bypass -->
+            <div class="form-group col-span-2">
+              <label class="checkbox-row" for="chkLyricBypass" style="margin-bottom:0;">
+                <input type="checkbox" id="chkLyricBypass">
+                <div>
+                  <span class="checkbox-title">Lyric-detection bypass (vocal stem mangle)</span>
+                  <span class="checkbox-desc">Downloads a ~300 MB separation model on first use, then splits vocals from the instrumental. Skipped when marked instrumental.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Section (5-Stage Segmented Progress Tracker matching chunks.md, Dark Synchronized) -->
+      <div class="progress-card" id="progressCard" style="display:none;">
+        <!-- Active Batch Track Header -->
+        <div class="batch-active-banner" id="batchActiveBanner" style="display:none;">
+          <div class="batch-active-left">
+            <span class="batch-step-pill" id="batchStepPill">Tệp 1/1</span>
+            <span class="batch-active-name" id="batchActiveName">Đang chuẩn bị...</span>
+          </div>
+          <div class="batch-active-right">
+            <div class="batch-pct-badge" title="Tiến độ tệp đang xử lý">
+              <span class="batch-pct-number" id="batchTrackPct">0%</span>
+            </div>
+            <span class="batch-overall-pct" id="batchOverallPct" style="display:none;">Tổng: 0%</span>
+          </div>
+        </div>
+
+        <div class="progress-stage-header">
+          <div class="stage-header-left">
+            <!-- CPU chip icon matching Lucide CPU -->
+            <svg class="cpu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="16" height="16" x="4" y="4" rx="2"></rect>
+              <rect width="6" height="6" x="9" y="9" rx="1"></rect>
+              <path d="M15 2v2"></path>
+              <path d="M15 20v2"></path>
+              <path d="M2 15h2"></path>
+              <path d="M2 9h2"></path>
+              <path d="M20 15h2"></path>
+              <path d="M20 9h2"></path>
+              <path d="M9 2v2"></path>
+              <path d="M9 20v2"></path>
+            </svg>
+            <span class="stage-title" id="stageTitle">SHAPE</span>
+            <span class="stage-dots">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </span>
+          </div>
+        </div>
+
+        <div class="progress-task-message" id="progressMessage">
+          MP3 round-trip (CBR) @ 320 kbps...
+        </div>
+
+        <!-- 5-Segmented Progress Bar -->
+        <div class="segmented-bar" role="progressbar" id="segmentedBar" aria-label="Progress">
+          <div class="segment" data-stage="input">
+            <div class="segment-fill" id="segFill-input"></div>
+          </div>
+          <div class="segment" data-stage="model">
+            <div class="segment-fill" id="segFill-model"></div>
+          </div>
+          <div class="segment" data-stage="separate">
+            <div class="segment-fill" id="segFill-separate"></div>
+          </div>
+          <div class="segment" data-stage="shape">
+            <div class="segment-fill" id="segFill-shape"></div>
+          </div>
+          <div class="segment" data-stage="file">
+            <div class="segment-fill" id="segFill-file"></div>
+          </div>
+        </div>
+
+        <!-- Stage Labels Row -->
+        <div class="stage-labels-row">
+          <span class="stage-label" id="stageLbl-input">INPUT</span>
+          <span class="stage-label" id="stageLbl-model">MODEL</span>
+          <span class="stage-label" id="stageLbl-separate">SEPARATE</span>
+          <span class="stage-label" id="stageLbl-shape">SHAPE</span>
+          <span class="stage-label" id="stageLbl-file">FILE</span>
+        </div>
+
+        <!-- Dynamic ETA line -->
+        <div class="eta-row" id="etaRow">
+          <div class="eta-left">
+            <span id="etaText">Đang chuẩn bị...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Button Area: Normal button or Abort processing -->
+      <div class="action-btn-container" style="margin-top: 16px;">
+        <button type="button" class="btn-primary" id="btnProcess" disabled>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span id="btnProcessLabel">Bắt đầu xử lý (Anonymize it!)</span>
+        </button>
+        <button type="button" class="btn-abort" id="btnAbort" style="display:none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="14" height="14" x="5" y="5" rx="2" ry="2"/>
+          </svg>
+          <span>Dừng xử lý (Abort processing)</span>
+        </button>
+      </div>
+
+      <!-- Log Drawer (Collapsible) -->
+      <div class="log-accordion" id="logAccordion" style="margin-top: 14px;">
+        <div class="log-header" id="logToggle">
+          <span id="logToggleLabel">▶ Xem chi tiết nhật ký dòng lệnh (Logs)</span>
+        </div>
+        <div class="log-box" id="logBox" style="display:none;"></div>
+      </div>
+
+      <!-- Batch Results Section (Incremental Results Display) -->
+      <div class="batch-results-section" id="batchResultsSection" style="display:none;">
+        <div class="results-header">
+          <div class="results-title-group">
+            <div class="results-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polygon points="10 8 16 12 10 16 10 8"/>
+              </svg>
+              Kết quả âm thanh đã xử lý (<span id="resultsCount">0</span>)
+            </div>
+            <div class="results-sub">
+              Tất cả tên file được tự động tối ưu ≤ 80 ký tự • Tự động tải về máy an toàn lần lượt
+            </div>
+          </div>
+          <div class="results-batch-actions">
+            <button type="button" class="btn-batch-download" id="btnDownloadAllMp3">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Tải tất cả MP3
+            </button>
+            <button type="button" class="btn-batch-download secondary" id="btnDownloadAllWav">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Tải tất cả WAV
+            </button>
+          </div>
+        </div>
+
+        <!-- Incremental Results List (Appended sequentially as each file finishes) -->
+        <div class="results-list" id="resultsList"></div>
+      </div>
+    </div>
+
+    <!-- 2. Suno Downloader View Card -->
+    <div class="main-card tab-view" id="viewDownloader" style="display:none;">
+      <!-- Suno Downloader Hero Banner -->
+      <div class="suno-hero-banner">
+        <div class="suno-hero-info">
+          <div class="suno-hero-title">
+            <span>Tải nhạc Suno Master</span>
+          </div>
+          <p class="suno-hero-desc">Trích xuất âm thanh gốc & xóa sạch thẻ Meta ID3.</p>
+        </div>
+      </div>
+
+      <!-- Suno URL Input Box -->
+      <div class="suno-input-section">
+        <div class="suno-input-header">
+          <label for="txtSunoLinks" class="suno-input-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            Dán link bài hát Suno (1 hoặc nhiều link)
+          </label>
+          <div class="suno-quick-actions">
+            <button type="button" class="btn-suno-quick" id="btnPasteClipboard">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+              Dán Clipboard
+            </button>
+            <button type="button" class="btn-suno-quick" id="btnSampleLink">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              Link mẫu
+            </button>
+            <button type="button" class="btn-suno-quick danger" id="btnClearLinks">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              Xóa
+            </button>
+          </div>
+        </div>
+
+        <textarea id="txtSunoLinks" class="suno-textarea" rows="4" placeholder="Dán link bài hát Suno vào đây (1 hoặc nhiều link, mỗi dòng một link)...&#10;Ví dụ: https://suno.com/song/c1a16429-f3fe-4d99-bdcf-61ee13ed6f00"></textarea>
+        <div class="suno-input-hints">
+          <span>Hỗ trợ: <code>suno.com/song/[uuid]</code> • <code>suno.com/s/[link]</code> • <code>suno.com/create?song=...</code> • UUID</span>
+          <span id="sunoLinkCountBadge" class="suno-link-count">0 link đã nhận diện</span>
+        </div>
+      </div>
+
+      <!-- Downloader Options Grid -->
+      <div class="suno-options-card">
+        <div class="suno-options-grid">
+          <div class="suno-opt-col">
+            <label class="form-label" for="selSunoFormat">
+              <span>Định dạng tải</span>
+              <span class="form-val-badge" id="valSunoFormat">MP3 Master</span>
+            </label>
+            <select id="selSunoFormat" class="select-sm">
+              <option value="mp3" selected>MP3 Master (320 kbps • Xóa Meta)</option>
+              <option value="wav">WAV Master (24-bit Lossless • Xóa Meta)</option>
+              <option value="both">Cả hai (MP3 & WAV Master)</option>
+            </select>
+            <div class="form-desc">Xóa sạch 100% thẻ Meta ID3, chất lượng phòng thu.</div>
+          </div>
+
+          <div class="suno-opt-col">
+            <label class="form-label" for="selSunoPreset">
+              <span>Preset Auto-Master</span>
+              <span class="form-val-badge highlight" id="valSunoPreset">Pop (-10 LUFS)</span>
+            </label>
+            <select id="selSunoPreset" class="select-sm">
+              <option value="pop" selected>Pop / Hiện đại (-10 LUFS • Cân bằng)</option>
+              <option value="ballad">Ballad / Acoustic (-12.5 LUFS • Thanh thoát)</option>
+              <option value="vinahouse">Vinahouse / Remix (-8.0 LUFS • Uy lực)</option>
+            </select>
+            <div class="form-desc">Tự động cân chỉnh LUFS & True Peak, lặp tối ưu đến 5 lần.</div>
+          </div>
+
+          <div class="suno-opt-col">
+            <label class="form-label" for="selSunoActionMode">
+              <span>Chế độ tải</span>
+              <span class="form-val-badge" id="valSunoAction">Chỉ tải gốc</span>
+            </label>
+            <select id="selSunoActionMode" class="select-sm">
+              <option value="download_only" selected>Chỉ tải file gốc (Direct Download)</option>
+            </select>
+            <div class="form-desc">Tải trực tiếp âm thanh đã auto-master chuyên sâu, sạch siêu dữ liệu.</div>
+          </div>
+        </div>
+
+        <div class="suno-options-row">
+          <label class="checkbox-row" for="chkSunoAutoDownload" style="margin-bottom:0; flex:1;">
+            <input type="checkbox" id="chkSunoAutoDownload" checked>
+            <div>
+              <span class="checkbox-title">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom; margin-right:4px; color:var(--primary);">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Tự động tải về máy an toàn (chống lỗi file trắng)
+              </span>
+              <span class="checkbox-desc">Đặt tên file chuẩn theo bài hát Suno, tải file MP3/WAV hoàn chỉnh không dính UUID.</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Fetch / Start Button -->
+      <div class="action-btn-container" style="margin-top: 16px;">
+        <button type="button" class="btn-primary" id="btnFetchSuno">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          </svg>
+          <span id="btnFetchSunoLabel">Phân tích & Tải nhạc Suno</span>
+        </button>
+      </div>
+
+      <!-- Suno Tracks Result Section -->
+      <div class="suno-tracks-section" id="sunoTracksSection" style="display:none; margin-top:24px;">
+        <div class="results-header">
+          <div class="results-title-group">
+            <div class="results-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 18V5l12-2v13"></path>
+                <circle cx="6" cy="18" r="3"></circle>
+                <circle cx="18" cy="16" r="3"></circle>
+              </svg>
+              Danh sách bài hát (<span id="sunoTracksCount">0</span>)
+            </div>
+            <div class="results-sub">Không gian 3D • Trong sáng & thanh thoát • Xóa sạch 100% ID3 tag</div>
+          </div>
+
+          <div class="results-batch-actions">
+            <button type="button" class="btn-batch-download" id="btnSunoDownloadAllMp3">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Tải tất cả MP3
+            </button>
+            <button type="button" class="btn-batch-download secondary" id="btnSunoDownloadAllWav">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Tải tất cả WAV
+            </button>
+            <button type="button" class="btn-batch-download success" id="btnSunoDownloadAllBoth">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              </svg>
+              Tải cả MP3 & WAV
+            </button>
+          </div>
+        </div>
+
+        <!-- Suno Track List Items -->
+        <div class="suno-track-list" id="sunoTrackList"></div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Local Suno Audio Optimizer • Reconstructed from chunks.md/#suno algorithm • 100% Client-Side Web Audio API</p>
+    </footer>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

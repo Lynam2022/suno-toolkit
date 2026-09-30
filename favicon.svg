@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="60%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+  </defs>
+  <!-- Background disc for dark/light browser tabs -->
+  <circle cx="12" cy="12" r="11.5" fill="#090d16" stroke="url(#brandGrad)" stroke-width="0.8" stroke-opacity="0.5"/>
+  <!-- Synchronized Brand Icon: Circle & Play Button -->
+  <circle cx="12" cy="12" r="9" fill="none" stroke="url(#brandGrad)" stroke-width="2.2"/>
+  <polygon points="10 8 16 12 10 16 10 8" fill="url(#brandGrad)" stroke="url(#brandGrad)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
