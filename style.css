@@ -2121,6 +2121,75 @@ audio {
   font-size: 0.74rem;
 }
 
+/* Suno Circular Progress Indicator */
+.suno-circle-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  padding: 2px 10px 2px 5px;
+  border-radius: 9999px;
+  transition: all 0.25s ease;
+  vertical-align: middle;
+  animation: sunoProgressFadeIn 0.25s ease-out;
+}
+
+@keyframes sunoProgressFadeIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.suno-circle-svg {
+  display: block;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 3px rgba(16, 185, 129, 0.45));
+}
+
+.suno-circle-bg {
+  stroke: rgba(255, 255, 255, 0.12);
+}
+
+.suno-circle-bar {
+  transition: stroke-dashoffset 0.22s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.2s ease;
+}
+
+.suno-circle-text {
+  font-family: 'JetBrains Mono', 'Segoe UI', monospace;
+  font-weight: 800;
+  fill: #10b981;
+}
+
+.suno-circle-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #34d399;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.suno-circle-progress.success {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.45);
+}
+
+.suno-circle-progress.success .suno-circle-label {
+  color: #10b981;
+}
+
+.suno-circle-progress.error {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.suno-circle-progress.error .suno-circle-label {
+  color: #f87171;
+}
+
+.suno-circle-progress.error .suno-circle-svg {
+  filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.4));
+}
+
 .suno-track-actions {
   display: flex;
   align-items: center;

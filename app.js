@@ -2051,24 +2051,146 @@ async function fetchSunoAudioBlob(audioUrl, track = null) {
   throw new Error(`Không thể tải file âm thanh từ Suno`);
 }
 
+function renderCircularProgressHTML(percent, label, isSuccess = false, isError = false) {
+  const p = Math.max(0, Math.min(100, Math.round(percent)));
+  const circumference = 65.973; // 2 * Math.PI * 10.5
+  const offset = (circumference * (1 - p / 100)).toFixed(2);
+  const statusClass = isError ? 'error' : (isSuccess ? 'success' : '');
+  const strokeColor = isError ? '#ef4444' : (isSuccess ? '#10b981' : '#10b981');
+  const textColor = isError ? '#ef4444' : '#10b981';
+  const displayText = isError ? '!' : (p === 100 ? '100%' : `${p}%`);
+
+  return `
+    <span class="suno-circle-progress ${statusClass}">
+      <svg class="suno-circle-svg" width="26" height="26" viewBox="0 0 26 26">
+        <circle class="suno-circle-bg" cx="13" cy="13" r="10.5" stroke-width="2.5" fill="none" />
+        <circle class="suno-circle-bar" cx="13" cy="13" r="10.5" stroke="${strokeColor}" stroke-width="2.5" 
+          stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" fill="none" 
+          transform="rotate(-90 13 13)" />
+        <text class="suno-circle-text" x="13" y="13" text-anchor="middle" dominant-baseline="central" 
+          fill="${textColor}" font-size="${p === 100 ? '6.5px' : '7.5px'}">${displayText}</text>
+      </svg>
+      <span class="suno-circle-label">${label}</span>
+    </span>
+  `;
+}
+
+function setTrackProgress(uuid, percent, label, isSuccess = false, isError = false) {
+  const statusEl = document.getElementById(`suno-status-${uuid}`);
+  if (!statusEl) return;
+
+  const p = Math.max(0, Math.min(100, Math.round(percent)));
+  const circumference = 65.973;
+  const offset = (circumference * (1 - p / 100)).toFixed(2);
+
+  let bar = statusEl.querySelector('.suno-circle-bar');
+  let txt = statusEl.querySelector('.suno-circle-text');
+  let lbl = statusEl.querySelector('.suno-circle-label');
+  let wrap = statusEl.querySelector('.suno-circle-progress');
+
+  if (!wrap || !bar || !txt || !lbl) {
+    statusEl.innerHTML = renderCircularProgressHTML(p, label, isSuccess, isError);
+    return;
+  }
+
+  wrap.className = `suno-circle-progress ${isError ? 'error' : (isSuccess ? 'success' : '')}`;
+  bar.style.strokeDashoffset = offset;
+  if (isError) {
+    bar.setAttribute('stroke', '#ef4444');
+    txt.setAttribute('fill', '#ef4444');
+    txt.textContent = '!';
+    txt.setAttribute('font-size', '8px');
+  } else if (isSuccess) {
+    bar.setAttribute('stroke', '#10b981');
+    txt.setAttribute('fill', '#10b981');
+    txt.textContent = '100%';
+    txt.setAttribute('font-size', '6.5px');
+  } else {
+    bar.setAttribute('stroke', '#10b981');
+    txt.setAttribute('fill', '#10b981');
+    txt.textContent = `${p}%`;
+    txt.setAttribute('font-size', p === 100 ? '6.5px' : '7.5px');
+  }
+  lbl.textContent = label;
+}
+
+async function downloadTrackFormatWithProgress(track, format, preset, onProgress) {
+  const url = `/api/suno-audio?uuid=${track.uuid}&format=${format}&preset=${preset}`;
+  const label = `Đang tải ${format.toUpperCase()} (${preset.toUpperCase()})...`;
+
+  let currentPct = 6;
+  onProgress(currentPct, label);
+
+  const timer = setInterval(() => {
+    if (currentPct < 40) {
+      currentPct += 4;
+    } else if (currentPct < 70) {
+      currentPct += 2;
+    } else if (currentPct < 88) {
+      currentPct += 1;
+    }
+    onProgress(currentPct, label);
+  }, 250);
+
+  try {
+    let res = await fetch(url);
+    if (!res.ok) {
+      res = await fetch(`/api/suno-stream?uuid=${track.uuid}`);
+    }
+    if (!res.ok) throw new Error(`Lỗi tải ${format.toUpperCase()} (${res.status})`);
+
+    const contentLengthHeader = res.headers.get('content-length');
+    const totalBytes = contentLengthHeader ? parseInt(contentLengthHeader, 10) : 0;
+
+    let blob;
+    if (res.body && totalBytes > 0) {
+      const reader = res.body.getReader();
+      const chunks = [];
+      let receivedBytes = 0;
+      clearInterval(timer);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        receivedBytes += value.length;
+        const streamPct = Math.min(99, 88 + Math.round((receivedBytes / totalBytes) * 11));
+        onProgress(streamPct, `Đang tải ${format.toUpperCase()} (${preset.toUpperCase()})...`);
+      }
+      blob = new Blob(chunks, { type: res.headers.get('content-type') || (format === 'wav' ? 'audio/wav' : 'audio/mpeg') });
+    } else {
+      clearInterval(timer);
+      onProgress(95, `Đang xử lý xuất file...`);
+      blob = await res.blob();
+    }
+
+    clearInterval(timer);
+    onProgress(100, `✓ Đã tải xong!`, true);
+    return blob;
+  } catch (e) {
+    clearInterval(timer);
+    throw e;
+  }
+}
+
 async function handleSingleTrackDownload(track, format = 'mp3', autoProcess = false) {
-  const statusEl = document.getElementById(`suno-status-${track.uuid}`);
-  if (statusEl) statusEl.textContent = 'Đang xử lý...';
+  setTrackProgress(track.uuid, 5, 'Đang chuẩn bị...');
 
   try {
     if (autoProcess) {
-      if (statusEl) statusEl.textContent = 'Đang tải âm thanh...';
+      setTrackProgress(track.uuid, 10, 'Đang tải luồng âm thanh...');
       const rawBlob = await fetchSunoAudioBlob(track.audioUrl, track);
-      if (statusEl) statusEl.textContent = 'Đang giải mã Web Audio...';
+      setTrackProgress(track.uuid, 25, 'Đang giải mã Web Audio...');
       const cleanName = sanitizeMediaFilename(track.title, 'suno_opt', 'mp3');
       const file = new File([rawBlob], cleanName, { type: rawBlob.type || 'audio/mp4' });
 
-      if (statusEl) statusEl.textContent = 'Đang xử lý Anonymize (3 vùng)...';
+      setTrackProgress(track.uuid, 35, 'Đang xử lý Anonymize (3 vùng)...');
       const pipelineOptions = getOptionsFromForm();
       const result = await processAudioPipeline(file, pipelineOptions, {
         onLog: msg => addLog(`[${track.title}] ${msg}`),
         onProgress: p => {
-          if (statusEl) statusEl.textContent = `${p.message} (${Math.round(p.subProgress * 100)}%)`;
+          const pct = Math.round(p.subProgress * 100);
+          setTrackProgress(track.uuid, pct, p.message);
         }
       });
 
@@ -2085,7 +2207,7 @@ async function handleSingleTrackDownload(track, format = 'mp3', autoProcess = fa
         downloadBlobSafely(result.wavBlob, fname);
         addLog(`✓ Đã tải WAV xử lý: ${fname}`);
       }
-      if (statusEl) statusEl.textContent = '✓ Hoàn tất xử lý!';
+      setTrackProgress(track.uuid, 100, '✓ Hoàn tất xử lý!', true);
       recordAudioProcessed(track.title);
       recordSunoDownload(1);
       return;
@@ -2095,51 +2217,64 @@ async function handleSingleTrackDownload(track, format = 'mp3', autoProcess = fa
       const selSunoPreset = document.getElementById('selSunoPreset');
       const preset = selSunoPreset ? selSunoPreset.value : 'pop';
 
-      if (format === 'wav' || format === 'both') {
-        if (statusEl) statusEl.textContent = `Đang tải WAV (${preset.toUpperCase()})...`;
-        let wavRes = await fetch(`/api/suno-audio?uuid=${track.uuid}&format=wav&preset=${preset}`);
-        if (!wavRes.ok) {
-          wavRes = await fetch(`/api/suno-stream?uuid=${track.uuid}`);
-        }
-        if (!wavRes.ok) throw new Error(`Lỗi tải WAV từ máy chủ (${wavRes.status})`);
-        const wavBlob = await wavRes.blob();
+      if (format === 'wav') {
+        const wavBlob = await downloadTrackFormatWithProgress(track, 'wav', preset, (pct, msg, isSuccess) => {
+          setTrackProgress(track.uuid, pct, msg, isSuccess);
+        });
         const fname = sanitizeMediaFilename(track.title, `master_${preset}`, 'wav');
         downloadBlobSafely(wavBlob, fname);
         addLog(`✓ Đã tải WAV Master 24-bit (${preset.toUpperCase()} • Sạch Meta): ${fname}`);
+        recordSunoDownload(1);
+        setTrackProgress(track.uuid, 100, '✓ Đã tải xong!', true);
+        return;
       }
 
-      if (format === 'mp3' || format === 'both') {
-        if (statusEl) statusEl.textContent = `Đang tải MP3 (${preset.toUpperCase()})...`;
-        let mp3Res = await fetch(`/api/suno-audio?uuid=${track.uuid}&format=mp3&preset=${preset}`);
-        if (!mp3Res.ok) {
-          mp3Res = await fetch(`/api/suno-stream?uuid=${track.uuid}`);
-        }
-        if (!mp3Res.ok) throw new Error(`Lỗi tải MP3 từ máy chủ (${mp3Res.status})`);
-        const mp3Blob = await mp3Res.blob();
+      if (format === 'mp3') {
+        const mp3Blob = await downloadTrackFormatWithProgress(track, 'mp3', preset, (pct, msg, isSuccess) => {
+          setTrackProgress(track.uuid, pct, msg, isSuccess);
+        });
         const fname = sanitizeMediaFilename(track.title, `master_${preset}`, 'mp3');
         downloadBlobSafely(mp3Blob, fname);
         addLog(`✓ Đã tải MP3 Master 320k (${preset.toUpperCase()} • Sạch Meta): ${fname}`);
+        recordSunoDownload(1);
+        setTrackProgress(track.uuid, 100, '✓ Đã tải xong!', true);
+        return;
       }
 
-      if (format === 'wav') recordSunoDownload(1);
-      else if (format === 'mp3') recordSunoDownload(1);
-      else if (format === 'both') recordSunoDownload(2);
+      if (format === 'both') {
+        setTrackProgress(track.uuid, 10, `Đang tải WAV (${preset.toUpperCase()})...`);
+        const wavBlob = await downloadTrackFormatWithProgress(track, 'wav', preset, (pct, msg) => {
+          setTrackProgress(track.uuid, Math.round(pct * 0.5), msg);
+        });
+        const fnameWav = sanitizeMediaFilename(track.title, `master_${preset}`, 'wav');
+        downloadBlobSafely(wavBlob, fnameWav);
+        addLog(`✓ Đã tải WAV Master: ${fnameWav}`);
 
-      if (statusEl) statusEl.textContent = `✓ Đã tải xong!`;
-      return;
+        setTrackProgress(track.uuid, 55, `Đang tải MP3 (${preset.toUpperCase()})...`);
+        const mp3Blob = await downloadTrackFormatWithProgress(track, 'mp3', preset, (pct, msg) => {
+          setTrackProgress(track.uuid, 50 + Math.round(pct * 0.5), msg);
+        });
+        const fnameMp3 = sanitizeMediaFilename(track.title, `master_${preset}`, 'mp3');
+        downloadBlobSafely(mp3Blob, fnameMp3);
+        addLog(`✓ Đã tải MP3 Master: ${fnameMp3}`);
+
+        recordSunoDownload(2);
+        setTrackProgress(track.uuid, 100, '✓ Đã tải xong cả 2 file!', true);
+        return;
+      }
     }
   } catch (err) {
-    if (statusEl) statusEl.textContent = `Lỗi: ${err.message}`;
+    setTrackProgress(track.uuid, 0, `Lỗi: ${err.message}`, false, true);
     addLog(`[Lỗi tải bài ${track.title}]: ${err.message}`);
   }
 }
 
 async function sendTrackToQueue(track) {
-  const statusEl = document.getElementById(`suno-status-${track.uuid}`);
-  if (statusEl) statusEl.textContent = 'Đang nạp vào hàng đợi...';
+  setTrackProgress(track.uuid, 15, 'Đang nạp vào hàng đợi...');
 
   try {
     const rawBlob = await fetchSunoAudioBlob(track.audioUrl, track);
+    setTrackProgress(track.uuid, 60, 'Đang chuẩn bị file...');
     const cleanFileName = sanitizeMediaFilename(track.title, 'suno', 'mp3');
     const file = new File([rawBlob], cleanFileName, { type: rawBlob.type || 'audio/mp4' });
 
@@ -2162,10 +2297,10 @@ async function sendTrackToQueue(track) {
     updateProcessButtonLabel();
     addLog(`Đã nạp "${track.title}" vào hàng đợi Audio Anonymization.`);
 
-    if (statusEl) statusEl.textContent = '✓ Đã nạp vào hàng đợi!';
+    setTrackProgress(track.uuid, 100, '✓ Đã nạp vào hàng đợi!', true);
     switchMainTab('anonymize');
   } catch (err) {
-    if (statusEl) statusEl.textContent = `Lỗi: ${err.message}`;
+    setTrackProgress(track.uuid, 0, `Lỗi: ${err.message}`, false, true);
     addLog(`[Lỗi nạp hàng đợi]: ${err.message}`);
   }
 }
@@ -2203,7 +2338,7 @@ function renderSunoTrackList() {
             <span class="suno-track-artist">${track.artist || 'Suno AI'}</span>
             <span>•</span>
             <span class="suno-track-uuid">ID: ${track.uuid.substring(0, 8)}...</span>
-            <span id="suno-status-${track.uuid}" style="color:var(--primary); font-weight:600; margin-left:6px;"></span>
+            <span id="suno-status-${track.uuid}" style="margin-left:6px; display:inline-flex; align-items:center;"></span>
           </div>
           <div style="margin-top:6px;">
             <audio controls preload="none" style="height:28px; width:100%; max-width:320px;" src="${track.audioUrl}"></audio>
