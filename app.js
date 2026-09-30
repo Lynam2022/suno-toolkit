@@ -1677,15 +1677,33 @@ function setupEvents() {
     if (btnStartBatchYoutube) btnStartBatchYoutube.disabled = false;
     if (btnAbortBatchYoutube) btnAbortBatchYoutube.style.display = 'none';
 
-    if (ytProgressBarFill) ytProgressBarFill.style.width = '100%';
-    if (ytProgressPct) ytProgressPct.textContent = '100%';
+    const finalPct = Math.round((currentBatchSuccess / Math.max(1, initialBatchTotal)) * 100);
+    if (ytProgressBarFill) {
+      ytProgressBarFill.style.width = `${finalPct}%`;
+      if (currentBatchSuccess === 0) {
+        ytProgressBarFill.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
+      } else {
+        ytProgressBarFill.style.background = 'linear-gradient(90deg, #f59e0b, #10b981)';
+      }
+    }
+    if (ytProgressPct) {
+      ytProgressPct.textContent = `${finalPct}%`;
+      if (currentBatchSuccess === 0) {
+        ytProgressPct.style.color = '#ef4444';
+      } else {
+        ytProgressPct.style.color = '';
+      }
+    }
 
     if (ytProgressStatusTitle) {
       if (ytAbortController && ytAbortController.signal.aborted) {
         ytProgressStatusTitle.textContent = `Đã dừng tải YouTube.`;
+      } else if (currentBatchSuccess === 0) {
+        ytProgressStatusTitle.textContent = `Không thể tải file âm thanh YouTube. Vui lòng thử lại hoặc mở bản Local (http://127.0.0.1:3300) để tải trực tiếp trên mạng gia đình không bị chặn IP.`;
+      } else if (currentBatchSuccess < initialBatchTotal) {
+        ytProgressStatusTitle.textContent = `Hoàn tất! Đã thêm ${currentBatchSuccess}/${initialBatchTotal} file âm thanh YouTube vào hàng đợi (${initialBatchTotal - currentBatchSuccess} bài lỗi).`;
       } else {
-        const count = currentBatchSuccess || 1;
-        ytProgressStatusTitle.textContent = `Hoàn tất! Đã thêm ${count} file âm thanh YouTube vào hàng đợi (100% thành công).`;
+        ytProgressStatusTitle.textContent = `Hoàn tất! Đã thêm ${currentBatchSuccess} file âm thanh YouTube vào hàng đợi (100% thành công).`;
       }
     }
   }

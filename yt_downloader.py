@@ -107,14 +107,13 @@ def has_valid_cookies():
     return get_active_cookie_file() is not None
 
 def get_fallback_candidates():
+    # Tuple of (client_list, use_cookie)
     return [
-        ['visionos'],
-        ['tv_embedded'],
-        ['android_music'],
-        ['android'],
-        ['ios_music'],
-        ['mweb'],
-        ['web']
+        (['android'], True),
+        (['android'], False),
+        (['android', 'ios'], True),
+        (['web'], True),
+        (['mweb'], True)
     ]
 
 def sanitize_title(title):
@@ -128,7 +127,7 @@ def extract_video_id(url):
     m = re.search(r'(?:v=|\/shorts\/|\/embed\/|youtu\.be\/|\/v\/)([a-zA-Z0-9_-]{11})', url)
     return m.group(1) if m else None
 
-def get_ydl_opts(target_format='mp3', outtmpl=None, client_list=None):
+def get_ydl_opts(target_format='mp3', outtmpl=None, client_list=None, use_cookies=True):
     postprocessors = []
     if target_format == 'wav':
         postprocessors.append({
@@ -142,10 +141,10 @@ def get_ydl_opts(target_format='mp3', outtmpl=None, client_list=None):
             'preferredquality': '320',
         })
 
-    clients = client_list or (get_fallback_candidates()[0])
+    clients = client_list or ['android']
 
     opts = {
-        'format': 'bestaudio/best',
+        'format': 'bestaudio/best[height<=720]/best',
         'postprocessors': postprocessors,
         'quiet': True,
         'no_warnings': True,
@@ -156,6 +155,7 @@ def get_ydl_opts(target_format='mp3', outtmpl=None, client_list=None):
         'keepvideo': False,
         'geo_bypass': True,
         'nocheckcertificate': True,
+        'socket_timeout': 10,
         'extractor_args': {
             'youtube': {
                 'player_client': clients
@@ -164,8 +164,8 @@ def get_ydl_opts(target_format='mp3', outtmpl=None, client_list=None):
         'js_runtimes': {'node': {}}
     }
 
-    # Attach cookie if exists and valid
-    if has_valid_cookies():
+    # Attach cookie if exists and requested
+    if use_cookies and has_valid_cookies():
         opts['cookiefile'] = get_active_cookie_file()
 
     if outtmpl:
@@ -194,14 +194,15 @@ def cleanup_cache():
 
 def get_info(url):
     last_err = None
-    for clients in get_fallback_candidates():
+    for clients, use_ck in get_fallback_candidates():
         opts = {
             'quiet': True,
             'no_warnings': True,
             'skip_download': True,
-            'format': 'bestaudio/best',
+            'format': 'bestaudio/best[height<=720]/best',
             'geo_bypass': True,
             'nocheckcertificate': True,
+            'socket_timeout': 10,
             'extractor_args': {
                 'youtube': {
                     'player_client': clients
@@ -209,7 +210,7 @@ def get_info(url):
             },
             'js_runtimes': {'node': {}}
         }
-        if has_valid_cookies():
+        if use_ck and has_valid_cookies():
             opts['cookiefile'] = get_active_cookie_file()
 
         try:
@@ -286,8 +287,8 @@ def download_audio(url, target_format='mp3'):
     outtmpl = os.path.join(CACHE_DIR, f"{vid_id}.%(ext)s")
 
     last_err = None
-    for clients in get_fallback_candidates():
-        opts = get_ydl_opts(target_format, outtmpl, clients)
+    for clients, use_ck in get_fallback_candidates():
+        opts = get_ydl_opts(target_format, outtmpl, clients, use_cookies=use_ck)
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
                 info = ydl.extract_info(url, download=True)
