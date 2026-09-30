@@ -235,7 +235,7 @@ def get_info(url):
 
     return {
         "success": False,
-        "error": f"{err_str} [Debug: {last_err} | Cookie: {get_active_cookie_file()}]",
+        "error": err_str,
         "url": url
     }
 
