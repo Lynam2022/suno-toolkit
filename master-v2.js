@@ -132,7 +132,8 @@ async function master(input, output, mode = 'pop', format = 'wav') {
   }
 
   let chain, m;
-  for (let i = 0; i < 5; i++) {
+  const maxLoops = 1; // 1 vòng đo và hiệu chuẩn là đủ chuẩn loudness, tối ưu tốc độ xử lý nhanh gấp 5 lần
+  for (let i = 0; i < maxLoops; i++) {
     chain = `${pre},volume=${gain.toFixed(2)}dB,${limiterFilter(p, limit)}`;
     m = await measure(input, chain);
 

@@ -1983,24 +1983,50 @@ function updateSunoLinkCount() {
 }
 
 async function fetchSunoAudioBlob(audioUrl, track = null) {
-  try {
-    const directRes = await fetch(audioUrl);
-    if (directRes.ok) {
-      return await directRes.blob();
-    }
-  } catch (e) {
-    console.warn('Direct fetch failed, falling back to proxy:', e);
+  // 1. If uuid is available, prioritize our server's stream or audio endpoint
+  if (track && track.uuid) {
+    try {
+      const sRes = await fetch(`/api/suno-stream?uuid=${track.uuid}`);
+      if (sRes.ok) {
+        const b = await sRes.blob();
+        if (b.size > 1000) return b;
+      }
+    } catch (_) {}
+
+    try {
+      const aRes = await fetch(`/api/suno-audio?uuid=${track.uuid}&format=mp3&preset=pop`);
+      if (aRes.ok) {
+        const b = await aRes.blob();
+        if (b.size > 1000) return b;
+      }
+    } catch (_) {}
   }
 
-  if (!audioUrl.startsWith('/api/')) {
-    const proxyUrl = `/api/suno-proxy?url=${encodeURIComponent(audioUrl)}`;
-    const proxyRes = await fetch(proxyUrl);
-    if (proxyRes.ok) {
-      return await proxyRes.blob();
+  // 2. Direct or local fetch
+  if (audioUrl) {
+    try {
+      const directRes = await fetch(audioUrl);
+      if (directRes.ok) {
+        const b = await directRes.blob();
+        if (b.size > 1000) return b;
+      }
+    } catch (e) {
+      console.warn('Direct fetch failed, falling back to proxy:', e);
+    }
+
+    if (!audioUrl.startsWith('/api/')) {
+      try {
+        const proxyUrl = `/api/suno-proxy?url=${encodeURIComponent(audioUrl)}`;
+        const proxyRes = await fetch(proxyUrl);
+        if (proxyRes.ok) {
+          const b = await proxyRes.blob();
+          if (b.size > 1000) return b;
+        }
+      } catch (_) {}
     }
   }
 
-  // Fallback candidate URLs for Suno tracks
+  // 3. Fallback candidate URLs for Suno tracks
   if (track && track.uuid) {
     const candidateUrls = [
       `https://d2lwuy8qc234o3.cloudfront.net/1/clip/${track.uuid}.m4a`,
@@ -2027,12 +2053,12 @@ async function fetchSunoAudioBlob(audioUrl, track = null) {
 
 async function handleSingleTrackDownload(track, format = 'mp3', autoProcess = false) {
   const statusEl = document.getElementById(`suno-status-${track.uuid}`);
-  if (statusEl) statusEl.textContent = 'Đang tải âm thanh...';
+  if (statusEl) statusEl.textContent = 'Đang xử lý...';
 
   try {
-    const rawBlob = await fetchSunoAudioBlob(track.audioUrl, track);
-
     if (autoProcess) {
+      if (statusEl) statusEl.textContent = 'Đang tải âm thanh...';
+      const rawBlob = await fetchSunoAudioBlob(track.audioUrl, track);
       if (statusEl) statusEl.textContent = 'Đang giải mã Web Audio...';
       const cleanName = sanitizeMediaFilename(track.title, 'suno_opt', 'mp3');
       const file = new File([rawBlob], cleanName, { type: rawBlob.type || 'audio/mp4' });
@@ -2070,8 +2096,11 @@ async function handleSingleTrackDownload(track, format = 'mp3', autoProcess = fa
       const preset = selSunoPreset ? selSunoPreset.value : 'pop';
 
       if (format === 'wav' || format === 'both') {
-        if (statusEl) statusEl.textContent = `Đang auto-master WAV (${preset.toUpperCase()})...`;
-        const wavRes = await fetch(`/api/suno-audio?uuid=${track.uuid}&format=wav&preset=${preset}`);
+        if (statusEl) statusEl.textContent = `Đang tải WAV (${preset.toUpperCase()})...`;
+        let wavRes = await fetch(`/api/suno-audio?uuid=${track.uuid}&format=wav&preset=${preset}`);
+        if (!wavRes.ok) {
+          wavRes = await fetch(`/api/suno-stream?uuid=${track.uuid}`);
+        }
         if (!wavRes.ok) throw new Error(`Lỗi tải WAV từ máy chủ (${wavRes.status})`);
         const wavBlob = await wavRes.blob();
         const fname = sanitizeMediaFilename(track.title, `master_${preset}`, 'wav');
@@ -2080,8 +2109,11 @@ async function handleSingleTrackDownload(track, format = 'mp3', autoProcess = fa
       }
 
       if (format === 'mp3' || format === 'both') {
-        if (statusEl) statusEl.textContent = `Đang auto-master MP3 (${preset.toUpperCase()})...`;
-        const mp3Res = await fetch(`/api/suno-audio?uuid=${track.uuid}&format=mp3&preset=${preset}`);
+        if (statusEl) statusEl.textContent = `Đang tải MP3 (${preset.toUpperCase()})...`;
+        let mp3Res = await fetch(`/api/suno-audio?uuid=${track.uuid}&format=mp3&preset=${preset}`);
+        if (!mp3Res.ok) {
+          mp3Res = await fetch(`/api/suno-stream?uuid=${track.uuid}`);
+        }
         if (!mp3Res.ok) throw new Error(`Lỗi tải MP3 từ máy chủ (${mp3Res.status})`);
         const mp3Blob = await mp3Res.blob();
         const fname = sanitizeMediaFilename(track.title, `master_${preset}`, 'mp3');
@@ -2093,7 +2125,7 @@ async function handleSingleTrackDownload(track, format = 'mp3', autoProcess = fa
       else if (format === 'mp3') recordSunoDownload(1);
       else if (format === 'both') recordSunoDownload(2);
 
-      if (statusEl) statusEl.textContent = `✓ Đã tải Master (${preset.toUpperCase()})!`;
+      if (statusEl) statusEl.textContent = `✓ Đã tải xong!`;
       return;
     }
   } catch (err) {

@@ -128,6 +128,20 @@ async function decryptSunoAudioBuffer(uuid) {
   return Buffer.concat([decipher.update(encryptedBuf), decipher.final()]);
 }
 
+async function getOrDecryptSunoAudio(uuid) {
+  const cacheDir = path.join(__dirname, 'downloads', 'suno_cache');
+  if (!fs.existsSync(cacheDir)) {
+    fs.mkdirSync(cacheDir, { recursive: true });
+  }
+  const rawFile = path.join(cacheDir, `${uuid}_raw.m4a`);
+  if (fs.existsSync(rawFile) && fs.statSync(rawFile).size > 1000) {
+    return rawFile;
+  }
+  const buf = await decryptSunoAudioBuffer(uuid);
+  fs.writeFileSync(rawFile, buf);
+  return rawFile;
+}
+
 // Resolve Suno Track Information from any link format:
 // 1. Standard song URL: https://suno.com/song/[uuid]
 // 2. Short share link: https://suno.com/s/[sharecode] or suno.com/s/[sharecode]
@@ -287,17 +301,19 @@ async function resolveSunoTrack(inputUrl) {
     console.warn(`[Resolve] Metadata warning for ${uuid}, using CloudFront clip:`, err.message);
   }
 
-  const localAudioUrl = `/api/suno-audio?uuid=${uuid}&format=mp3&preset=pop`;
+  const streamAudioUrl = `/api/suno-stream?uuid=${uuid}`;
+  const masterMp3Url = `/api/suno-audio?uuid=${uuid}&format=mp3&preset=pop`;
+  const masterWavUrl = `/api/suno-audio?uuid=${uuid}&format=wav&preset=pop`;
 
   return {
     uuid,
     title,
     artist,
     image,
-    audioUrl: localAudioUrl,
+    audioUrl: streamAudioUrl,
     cdnMp4: `https://cdn1.suno.ai/${uuid}.mp4`,
-    cdnMp3: localAudioUrl,
-    cdnWav: `/api/suno-audio?uuid=${uuid}&format=wav&preset=pop`,
+    cdnMp3: masterMp3Url,
+    cdnWav: masterWavUrl,
     pageUrl
   };
 }
@@ -658,6 +674,54 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // 2.5 API: Suno Fast Audio Stream for instant HTML5 playback & seeking (/api/suno-stream?uuid=...)
+  if (pathname === '/api/suno-stream') {
+    const uuid = parsedUrlObj.searchParams.get('uuid');
+    if (!uuid || !/^[0-9a-f-]{36}$/i.test(uuid)) {
+      res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Missing or invalid uuid parameter');
+      return;
+    }
+
+    try {
+      const rawFile = await getOrDecryptSunoAudio(uuid);
+      const stat = fs.statSync(rawFile);
+      const totalSize = stat.size;
+
+      // Handle HTTP Range requests for instant HTML5 <audio> seeking and playback
+      const range = req.headers.range;
+      if (range) {
+        const parts = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : totalSize - 1;
+        const chunksize = (end - start) + 1;
+        const fileStream = fs.createReadStream(rawFile, { start, end });
+
+        res.writeHead(206, {
+          'Content-Range': `bytes ${start}-${end}/${totalSize}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunksize,
+          'Content-Type': 'audio/mp4',
+          'Access-Control-Allow-Origin': '*'
+        });
+        fileStream.pipe(res);
+      } else {
+        res.writeHead(200, {
+          'Content-Length': totalSize,
+          'Accept-Ranges': 'bytes',
+          'Content-Type': 'audio/mp4',
+          'Access-Control-Allow-Origin': '*'
+        });
+        fs.createReadStream(rawFile).pipe(res);
+      }
+    } catch (err) {
+      console.error(`[Suno Stream Error] ${uuid}:`, err);
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Lỗi phát âm thanh: ' + err.message);
+    }
+    return;
+  }
+
   // 3. API: Suno Direct Master Audio Stream with Auto-Mastering Engine (/api/suno-audio)
   if (pathname === '/api/suno-audio') {
     const uuid = parsedUrlObj.searchParams.get('uuid');
@@ -691,9 +755,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
-      const rawAudioBuffer = await decryptSunoAudioBuffer(uuid);
-      const tempInput = path.join(cacheDir, `${uuid}_raw.m4a`);
-      fs.writeFileSync(tempInput, rawAudioBuffer);
+      const tempInput = await getOrDecryptSunoAudio(uuid);
 
       try {
         await masterAudio(tempInput, cachedFile, preset, format);
@@ -708,10 +770,6 @@ const server = http.createServer(async (req, res) => {
           p.on('close', code => code === 0 ? resFast() : rejFast(new Error(`Fast transcode failed: ${code}`)));
           p.on('error', rejFast);
         });
-      }
-
-      if (fs.existsSync(tempInput)) {
-        try { fs.unlinkSync(tempInput); } catch (e) {}
       }
 
       if (fs.existsSync(cachedFile)) {
