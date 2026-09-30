@@ -2335,13 +2335,13 @@ function renderSunoTrackList() {
         <div class="suno-track-details">
           <div class="suno-track-title" title="${track.title}">${track.title}</div>
           <div class="suno-track-meta">
-            <span class="suno-track-artist">${track.artist || 'Suno AI'}</span>
+            <span class="suno-track-artist" title="${track.artist || 'Suno AI'}">${track.artist || 'Suno AI'}</span>
             <span>•</span>
             <span class="suno-track-uuid">ID: ${track.uuid.substring(0, 8)}...</span>
-            <span id="suno-status-${track.uuid}" style="margin-left:6px; display:inline-flex; align-items:center;"></span>
           </div>
-          <div style="margin-top:6px;">
-            <audio controls preload="none" style="height:28px; width:100%; max-width:320px;" src="${track.audioUrl}"></audio>
+          <div class="suno-track-player-row">
+            <audio controls preload="none" class="suno-audio-player" src="${track.audioUrl}"></audio>
+            <span id="suno-status-${track.uuid}" class="suno-status-cell"></span>
           </div>
         </div>
       </div>

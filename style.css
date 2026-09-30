@@ -2107,18 +2107,47 @@ audio {
 .suno-track-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-size: 0.78rem;
   color: var(--text-dim);
+  margin-bottom: 4px;
+  flex-wrap: wrap;
 }
 
 .suno-track-artist {
   color: var(--text-muted);
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .suno-track-uuid {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.74rem;
+}
+
+/* Player Row with Integrated Status */
+.suno-track-player-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.suno-audio-player {
+  height: 28px;
+  width: 240px;
+  max-width: 100%;
+  outline: none;
+  flex-shrink: 0;
+}
+
+.suno-status-cell {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 /* Suno Circular Progress Indicator */
@@ -2133,6 +2162,7 @@ audio {
   transition: all 0.25s ease;
   vertical-align: middle;
   animation: sunoProgressFadeIn 0.25s ease-out;
+  max-width: 100%;
 }
 
 @keyframes sunoProgressFadeIn {
@@ -2195,6 +2225,7 @@ audio {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  z-index: 2;
 }
 
 .btn-track-action {
@@ -2250,6 +2281,21 @@ audio {
 .btn-batch-download.success:hover {
   background: rgba(16, 185, 129, 0.3);
   border-color: var(--primary);
+}
+
+@media (max-width: 900px) {
+  .suno-track-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .suno-track-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 10px;
+  }
 }
 
 /* App Footer & Real-time Processing Stats */
