@@ -871,8 +871,72 @@
       </div>
     </div>
 
-    <footer>
-      <p>Local Suno Audio Optimizer • Reconstructed from chunks.md/#suno algorithm • 100% Client-Side Web Audio API</p>
+    <!-- App Footer with Real-time Processing & Suno Download Stats -->
+    <footer class="app-footer">
+      <div class="footer-stats-bar">
+        <div class="footer-stat-card">
+          <div class="stat-icon-wrap stat-icon-dsp">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12h5l2-7 4 14 3-7h6"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Tổng lượt xử lý âm thanh</span>
+            <span class="stat-number" id="footerTotalProcessed">0</span>
+          </div>
+        </div>
+
+        <div class="footer-stat-card">
+          <div class="stat-icon-wrap stat-icon-suno">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Tổng lượt tải từ Suno AI</span>
+            <span class="stat-number" id="footerTotalSuno">0</span>
+          </div>
+        </div>
+
+        <button type="button" class="footer-stat-card footer-stat-button" id="btnToggleFileStats" title="Nhấp để xem chi tiết số lượt xử lý của từng file">
+          <div class="stat-icon-wrap stat-icon-files">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13"></path>
+              <circle cx="6" cy="18" r="3"></circle>
+              <circle cx="18" cy="16" r="3"></circle>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Số file riêng biệt đã xử lý</span>
+            <span class="stat-number" id="footerTotalUniqueFiles">0 tệp</span>
+          </div>
+          <span class="stat-toggle-chevron" id="fileStatsChevron">▾</span>
+        </button>
+      </div>
+
+      <!-- Expandable Drawer for Individual File Processing Counts -->
+      <div class="file-stats-drawer" id="fileStatsDrawer" style="display: none;">
+        <div class="file-stats-drawer-header">
+          <div class="drawer-title-group">
+            <span class="drawer-title">📊 Lịch sử & Số lượt xử lý của từng file âm thanh</span>
+            <span class="drawer-subtitle">Lưu trữ tự động trên trình duyệt</span>
+          </div>
+          <button type="button" class="btn-clear-file-stats" id="btnClearFileStats" title="Đặt lại bộ đếm thống kê">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Xóa lịch sử thống kê
+          </button>
+        </div>
+        <div class="file-stats-table-wrapper">
+          <div class="file-stats-list" id="fileStatsList">
+            <div class="file-stats-empty">Chưa có tệp âm thanh nào được xử lý. Khi bạn xử lý âm thanh, số lượt của từng tệp sẽ được ghi nhận tại đây.</div>
+          </div>
+        </div>
+      </div>
     </footer>
   </div>
 

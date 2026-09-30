@@ -1110,6 +1110,9 @@ async function startBatchProcessing() {
       });
 
       item.status = 'done';
+      if (item.file && item.file.name) {
+        recordAudioProcessed(item.file.name);
+      }
       item.wavBlob = result.wavBlob;
       item.mp3Blob = result.mp3Blob;
       item.wavUrl = URL.createObjectURL(result.wavBlob);
@@ -2033,6 +2036,8 @@ async function handleSingleTrackDownload(track, format = 'mp3', autoProcess = fa
         addLog(`✓ Đã tải WAV xử lý: ${fname}`);
       }
       if (statusEl) statusEl.textContent = '✓ Hoàn tất xử lý!';
+      recordAudioProcessed(track.title);
+      recordSunoDownload(1);
       return;
     }
 
@@ -2059,6 +2064,10 @@ async function handleSingleTrackDownload(track, format = 'mp3', autoProcess = fa
         downloadBlobSafely(mp3Blob, fname);
         addLog(`✓ Đã tải MP3 Master 320k (${preset.toUpperCase()} • Sạch Meta): ${fname}`);
       }
+
+      if (format === 'wav') recordSunoDownload(1);
+      else if (format === 'mp3') recordSunoDownload(1);
+      else if (format === 'both') recordSunoDownload(2);
 
       if (statusEl) statusEl.textContent = `✓ Đã tải Master (${preset.toUpperCase()})!`;
       return;
@@ -2420,6 +2429,136 @@ function setupSunoDownloaderEvents() {
         await new Promise(r => setTimeout(r, 600));
       }
     });
+  }
+
+  if (btnDlFetchedMp3) {
+    btnDlFetchedMp3.addEventListener('click', () => recordSunoDownload(1));
+  }
+  if (btnDlFetchedWav) {
+    btnDlFetchedWav.addEventListener('click', () => recordSunoDownload(1));
+  }
+
+  // Khởi tạo bộ đếm và giao diện thống kê chân trang
+  initFooterStatsEvents();
+}
+
+// ============================================================================
+// Footer Statistics: Real-time File Processing & Suno Download Counts
+// ============================================================================
+const STATS_STORAGE_KEY_TOTAL_PROCESSED = 'suno_stats_total_processed';
+const STATS_STORAGE_KEY_TOTAL_SUNO = 'suno_stats_total_suno_downloads';
+const STATS_STORAGE_KEY_FILES = 'suno_stats_processed_files';
+
+function getFooterStats() {
+  let totalProcessed = 0;
+  let totalSuno = 0;
+  let files = {};
+
+  try {
+    totalProcessed = parseInt(localStorage.getItem(STATS_STORAGE_KEY_TOTAL_PROCESSED) || '0', 10);
+    totalSuno = parseInt(localStorage.getItem(STATS_STORAGE_KEY_TOTAL_SUNO) || '0', 10);
+    const rawFiles = localStorage.getItem(STATS_STORAGE_KEY_FILES);
+    if (rawFiles) {
+      files = JSON.parse(rawFiles);
+    }
+  } catch (e) {
+    console.warn('[Stats] Failed to load stats from localStorage:', e);
+  }
+
+  return { totalProcessed, totalSuno, files };
+}
+
+function saveFooterStats(totalProcessed, totalSuno, files) {
+  try {
+    localStorage.setItem(STATS_STORAGE_KEY_TOTAL_PROCESSED, totalProcessed.toString());
+    localStorage.setItem(STATS_STORAGE_KEY_TOTAL_SUNO, totalSuno.toString());
+    localStorage.setItem(STATS_STORAGE_KEY_FILES, JSON.stringify(files));
+  } catch (e) {
+    console.warn('[Stats] Failed to save stats to localStorage:', e);
+  }
+}
+
+function updateFooterStatsUI() {
+  const footerTotalProcessed = document.getElementById('footerTotalProcessed');
+  const footerTotalSuno = document.getElementById('footerTotalSuno');
+  const footerTotalUniqueFiles = document.getElementById('footerTotalUniqueFiles');
+  const fileStatsList = document.getElementById('fileStatsList');
+
+  const { totalProcessed, totalSuno, files } = getFooterStats();
+
+  if (footerTotalProcessed) footerTotalProcessed.textContent = totalProcessed.toLocaleString('vi-VN');
+  if (footerTotalSuno) footerTotalSuno.textContent = totalSuno.toLocaleString('vi-VN');
+
+  const fileEntries = Object.entries(files);
+  if (footerTotalUniqueFiles) {
+    footerTotalUniqueFiles.textContent = `${fileEntries.length.toLocaleString('vi-VN')} tệp`;
+  }
+
+  if (fileStatsList) {
+    if (fileEntries.length === 0) {
+      fileStatsList.innerHTML = `<div class="file-stats-empty">Chưa có tệp âm thanh nào được xử lý. Khi bạn xử lý âm thanh, số lượt của từng tệp sẽ được ghi nhận tại đây.</div>`;
+    } else {
+      fileEntries.sort((a, b) => b[1].count - a[1].count);
+
+      fileStatsList.innerHTML = fileEntries.map(([name, data]) => `
+        <div class="file-stats-item">
+          <span class="file-stats-name" title="${name}">🎵 ${name}</span>
+          <span class="file-stats-count-badge">${data.count} lượt xử lý</span>
+        </div>
+      `).join('');
+    }
+  }
+}
+
+function recordAudioProcessed(fileName) {
+  if (!fileName) return;
+  const { totalProcessed, totalSuno, files } = getFooterStats();
+
+  const newTotal = totalProcessed + 1;
+  const cleanName = fileName.trim();
+
+  if (!files[cleanName]) {
+    files[cleanName] = { count: 1, lastUpdated: new Date().toISOString() };
+  } else {
+    files[cleanName].count += 1;
+    files[cleanName].lastUpdated = new Date().toISOString();
+  }
+
+  saveFooterStats(newTotal, totalSuno, files);
+  updateFooterStatsUI();
+}
+
+function recordSunoDownload(count = 1) {
+  const { totalProcessed, totalSuno, files } = getFooterStats();
+  const newSuno = totalSuno + (typeof count === 'number' ? count : 1);
+  saveFooterStats(totalProcessed, newSuno, files);
+  updateFooterStatsUI();
+}
+
+function clearFooterStats() {
+  if (confirm('Bạn có chắc chắn muốn đặt lại toàn bộ thống kê số lượt xử lý và tải tệp về 0?')) {
+    saveFooterStats(0, 0, {});
+    updateFooterStatsUI();
+  }
+}
+
+function initFooterStatsEvents() {
+  updateFooterStatsUI();
+
+  const btnToggleFileStats = document.getElementById('btnToggleFileStats');
+  const fileStatsDrawer = document.getElementById('fileStatsDrawer');
+  const btnClearFileStats = document.getElementById('btnClearFileStats');
+
+  if (btnToggleFileStats && fileStatsDrawer) {
+    btnToggleFileStats.addEventListener('click', () => {
+      const isHidden = fileStatsDrawer.style.display === 'none';
+      fileStatsDrawer.style.display = isHidden ? 'block' : 'none';
+      btnToggleFileStats.classList.toggle('open', isHidden);
+    });
+  }
+
+  if (btnClearFileStats) {
+    btnClearFileStats.addEventListener('click', clearFooterStats);
   }
 }
 
