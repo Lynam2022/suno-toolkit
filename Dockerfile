@@ -14,24 +14,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 2. Upgrade pip and install yt-dlp
 RUN pip3 install --no-cache-dir --break-system-packages -U yt-dlp
 
-# 3. Create non-root user required by Hugging Face Spaces (UID 1000)
-RUN useradd -m -u 1000 user
-USER user
-ENV HOME=/home/user \
-    PATH=/home/user/.local/bin:$PATH
+# 3. Setup work directory
+WORKDIR /app
 
-WORKDIR $HOME/app
+# 4. Copy all project files
+COPY . /app
 
-# 4. Copy all project files with correct ownership
-COPY --chown=user:user . $HOME/app
+# 5. Create storage directories with full write permissions
+RUN mkdir -p /app/downloads/yt_cache && chmod -R 777 /app/downloads
 
-# 5. Create storage directories with write permissions
-RUN mkdir -p $HOME/app/downloads/yt_cache
-
-# 6. Hugging Face Spaces listens on port 7860 by default
-ENV PORT=7860
+# 6. Default environment variables (Render automatically overrides PORT)
+ENV PORT=10000
 ENV HOST=0.0.0.0
-EXPOSE 7860
+EXPOSE 10000
 
 # 7. Start application server
 CMD ["node", "server.js"]
