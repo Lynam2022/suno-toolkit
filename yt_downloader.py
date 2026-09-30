@@ -107,19 +107,13 @@ def has_valid_cookies():
     return get_active_cookie_file() is not None
 
 def get_fallback_candidates():
-    if has_valid_cookies():
-        return [
-            ['tv', 'mweb', 'web'],
-            ['tv', 'web'],
-            ['mweb', 'web'],
-            ['web'],
-            ['android', 'web']
-        ]
     return [
-        ['android', 'web'],
-        ['mweb', 'web'],
-        ['ios', 'web'],
-        ['tv', 'web']
+        ['android_music'],
+        ['tv_embedded'],
+        ['android'],
+        ['ios_music'],
+        ['mweb'],
+        ['web']
     ]
 
 def sanitize_title(title):
