@@ -1368,7 +1368,7 @@ function switchMainTab(targetTab) {
     if (viewAnonymize) viewAnonymize.style.display = 'none';
     if (viewDownloader) viewDownloader.style.display = 'block';
     if (pageMainHeading) pageMainHeading.textContent = 'Suno Music Downloader & Auto-Processor';
-    if (pageSubHeading) pageSubHeading.textContent = 'Tải nhạc trực tiếp từ Suno AI chất lượng cao (MP3 & WAV Master). Hỗ trợ dán 1 link hoặc dán hàng loạt link, tự động làm sạch và chuyển tiếp vào hệ thống xử lý.';
+    if (pageSubHeading) pageSubHeading.textContent = 'Tải nhạc gốc chất lượng cao từ Suno AI (MP3 & WAV Master).';
     try {
       localStorage.setItem('suno_active_main_tab', 'downloader');
     } catch (_) {}
@@ -1378,7 +1378,7 @@ function switchMainTab(targetTab) {
     if (viewDownloader) viewDownloader.style.display = 'none';
     if (viewAnonymize) viewAnonymize.style.display = 'block';
     if (pageMainHeading) pageMainHeading.textContent = 'Suno Audio Anonymization';
-    if (pageSubHeading) pageSubHeading.textContent = 'Điều chỉnh âm thanh trước khi nhập vào Suno AI. Tối ưu hóa để vượt qua bộ lọc nhận diện bản quyền và cải thiện độ nét của âm thanh.';
+    if (pageSubHeading) pageSubHeading.textContent = 'Tối ưu âm thanh & vượt bộ lọc bản quyền Suno AI.';
     try {
       localStorage.setItem('suno_active_main_tab', 'anonymize');
     } catch (_) {}

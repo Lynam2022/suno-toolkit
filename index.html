@@ -50,7 +50,7 @@
 
       <div class="header-titles">
         <h1 id="pageMainHeading">Suno Audio Anonymization</h1>
-        <p class="subtitle" id="pageSubHeading">Điều chỉnh âm thanh trước khi nhập vào Suno AI. Tối ưu hóa để vượt qua bộ lọc nhận diện bản quyền và cải thiện độ nét của âm thanh.</p>
+        <p class="subtitle" id="pageSubHeading">Tối ưu âm thanh & vượt bộ lọc bản quyền Suno AI.</p>
       </div>
     </header>
 
@@ -66,8 +66,8 @@
             <line x1="12" y1="3" x2="12" y2="15"></line>
           </svg>
         </div>
-        <div class="dropzone-title">Kéo & thả file âm thanh vào đây hoặc nhấp để chọn</div>
-        <div class="dropzone-hint">Hỗ trợ chọn hoặc kéo thả nhiều file cùng lúc (MP3, WAV, OGG, FLAC, M4A, AAC, WebM) • Xử lý 100% tại máy</div>
+        <div class="dropzone-title">Kéo & thả file âm thanh hoặc nhấp để chọn</div>
+        <div class="dropzone-hint">Chọn nhiều file (MP3, WAV, M4A, FLAC...) • Xử lý 100% offline</div>
       </div>
 
       <!-- Batch Queue Section (Multi-File Queue List) -->
@@ -116,9 +116,9 @@
                   <polyline points="7 10 12 15 17 10"/>
                   <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
-                Tự động tải về máy khi xử lý xong
+                Tự động tải khi xử lý xong
               </span>
-              <span class="checkbox-desc">Tải tuần tự an toàn, chuẩn tên file ≤ 80 ký tự.</span>
+              <span class="checkbox-desc">Tải an toàn, chuẩn tên file ≤ 80 ký tự.</span>
             </div>
           </label>
           <div class="auto-download-format">
@@ -137,7 +137,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
         </svg>
-        <span><strong>Chế độ âm thanh rõ nét:</strong> Giữ nguyên giọng hát sạch sẽ 100%, 48kHz, 320 kbps chuẩn Master + Đảo/dịch nhẹ 3 vùng phá vỡ kiểm duyệt.</span>
+        <span><strong>Âm thanh rõ nét:</strong> Giữ giọng 100%, 48kHz Master + Đảo vi mô 3 vùng.</span>
         <button class="btn-clarity-mode" id="btnClarityMode">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
@@ -149,7 +149,7 @@
       <!-- Preset Selector -->
       <div class="section-label">
         <span>PRESET MẪU</span>
-        <span style="font-size: 0.72rem; color: var(--text-dim);">Chọn cấu hình mong muốn</span>
+        <span style="font-size: 0.72rem; color: var(--text-dim);">Chọn cấu hình</span>
       </div>
       <div class="presets-grid">
         <button type="button" class="preset-btn active" data-preset="subtle">
@@ -174,8 +174,8 @@
       <label class="checkbox-row" for="chkIsInstrumental">
         <input type="checkbox" id="chkIsInstrumental">
         <div>
-          <span class="checkbox-title">Bài hát này là bản nhạc không lời (No vocals)</span>
-          <span class="checkbox-desc">Bỏ qua quá trình nhận diện giọng hát và bypass lời bài hát để tiết kiệm thời gian.</span>
+          <span class="checkbox-title">Bản nhạc không lời (No vocals)</span>
+          <span class="checkbox-desc">Bỏ qua quét vocal để xử lý nhanh hơn.</span>
         </div>
       </label>
 
@@ -187,7 +187,7 @@
               <circle cx="12" cy="12" r="3"></circle>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
             </svg>
-            Advanced settings (Thiết lập chuyên sâu)
+            Thiết lập chuyên sâu (Advanced settings)
           </div>
           <svg class="accordion-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="6 9 12 15 18 9"></polyline>
@@ -202,11 +202,11 @@
                 <span>Chế độ Instrumental only</span>
               </label>
               <div class="button-group">
-                <button type="button" class="group-btn inst-mode-btn" data-mode="off">Off (Giữ giọng hát)</button>
-                <button type="button" class="group-btn inst-mode-btn active" data-mode="light">Light (Triệt tiêu kênh trung tâm)</button>
-                <button type="button" class="group-btn inst-mode-btn" data-mode="hard">Hard (Tách beat sâu)</button>
+                <button type="button" class="group-btn inst-mode-btn" data-mode="off">Off (Giữ giọng)</button>
+                <button type="button" class="group-btn inst-mode-btn active" data-mode="light">Light (Bỏ kênh giữa)</button>
+                <button type="button" class="group-btn inst-mode-btn" data-mode="hard">Hard (Tách sâu)</button>
               </div>
-              <div class="form-desc">Light = center-channel vocal cancel (nhanh, xử lý trực tiếp trên trình duyệt, vượt qua bộ lọc Suno).</div>
+              <div class="form-desc">Triệt tiêu vocal trực tiếp trên trình duyệt.</div>
             </div>
 
             <!-- Pitch Shift -->
@@ -216,7 +216,7 @@
                 <span class="form-val-badge" id="valPitch">0 st</span>
               </label>
               <input type="range" id="inputPitch" min="-12" max="12" step="0.5" value="0">
-              <div class="form-desc">Dịch chuyển cao độ bài hát (0 = giữ nguyên tone gốc, nghe tự nhiên nhất).</div>
+              <div class="form-desc">0 = giữ nguyên cao độ gốc.</div>
             </div>
 
             <!-- Tempo -->
@@ -226,7 +226,7 @@
                 <span class="form-val-badge" id="valTempo">100%</span>
               </label>
               <input type="range" id="inputTempo" min="50" max="200" step="1" value="100">
-              <div class="form-desc">Co giãn tốc độ giữ nguyên cao độ (100% = giữ nguyên nhịp, không bị nhòe pha âm thanh).</div>
+              <div class="form-desc">100% = giữ nguyên nhịp gốc.</div>
             </div>
 
             <!-- Sample rate -->
@@ -235,7 +235,7 @@
                 <span>Sample rate (Hz, blank = keep original)</span>
               </label>
               <input type="number" id="inputSampleRate" min="8000" max="96000" step="1000" value="48000">
-              <div class="form-desc">Tần số lấy mẫu (48000 Hz chuẩn studio chất lượng cao).</div>
+              <div class="form-desc">48000 Hz chuẩn studio.</div>
             </div>
 
             <!-- EQ Notch -->
@@ -244,7 +244,7 @@
                 <span>EQ notch (Hz, blank = off)</span>
               </label>
               <input type="number" id="inputEqNotch" min="50" max="20000" step="10" placeholder="vd: 300" value="">
-              <div class="form-desc">Bộ lọc cắt bỏ tần số hẹp cố định.</div>
+              <div class="form-desc">Cắt bỏ tần số hẹp cố định.</div>
             </div>
 
             <!-- Reverb Wet -->
@@ -254,7 +254,7 @@
                 <span class="form-val-badge" id="valReverb">0%</span>
               </label>
               <input type="range" id="inputReverb" min="0" max="100" step="1" value="0">
-              <div class="form-desc">Độ vang vọng nhân tạo (0% = âm thanh khô, sắc nét và sạch sẽ nhất).</div>
+              <div class="form-desc">0% = âm thanh gốc sắc nét.</div>
             </div>
 
             <!-- Silence pad -->
@@ -264,7 +264,7 @@
                 <span class="form-val-badge" id="valSilence">0s</span>
               </label>
               <input type="range" id="inputSilence" min="0" max="10" step="0.1" value="0">
-              <div class="form-desc">Thêm khoảng im lặng ở đầu file trước khi nhạc bắt đầu.</div>
+              <div class="form-desc">Thêm khoảng im lặng đầu bài.</div>
             </div>
 
             <!-- MP3 Round-trip Bitrate -->
@@ -274,7 +274,7 @@
                 <span class="form-val-badge" id="valMp3Bitrate">320 kbps</span>
               </label>
               <input type="range" id="inputMp3Bitrate" min="32" max="320" step="16" value="320">
-              <div class="form-desc">Mã hóa nén vòng để làm xáo trộn đỉnh phổ (320 kbps giữ trọn dải treble leng keng).</div>
+              <div class="form-desc">Nén vòng xáo trộn đỉnh phổ (320 kbps).</div>
             </div>
 
             <!-- MP3 VBR Mode Checkbox -->
@@ -283,7 +283,7 @@
                 <input type="checkbox" id="chkMp3Vbr">
                 <div>
                   <span class="checkbox-title">MP3 round-trip: VBR mode</span>
-                  <span class="checkbox-desc">Khác biệt phân bổ bit so với CBR ở cùng bitrate.</span>
+                  <span class="checkbox-desc">Phân bổ bit biến thiên (VBR).</span>
                 </div>
               </label>
             </div>
@@ -295,7 +295,7 @@
                 <span class="form-val-badge" id="valEqTiltMax">±0 dB</span>
               </label>
               <input type="range" id="inputEqTiltMax" min="0" max="6" step="0.5" value="0">
-              <div class="form-desc">Mức độ biến dạng âm sắc ngẫu nhiên qua các dải tần số.</div>
+              <div class="form-desc">Biến dạng âm sắc ngẫu nhiên.</div>
             </div>
 
             <!-- EQ Tilt Bands -->
@@ -314,7 +314,7 @@
                 <span class="form-val-badge" id="valFullJitter">±0¢</span>
               </label>
               <input type="range" id="inputFullJitter" min="0" max="50" step="1" value="0">
-              <div class="form-desc">Rung nhẹ cao độ toàn bài (0 = pitch ổn định tuyệt đối).</div>
+              <div class="form-desc">0 = pitch ổn định.</div>
               <input type="hidden" id="inputFullJitterHz" value="0">
             </div>
 
@@ -325,7 +325,7 @@
                 <span class="form-val-badge" id="valSideJitter">±0¢</span>
               </label>
               <input type="range" id="inputSideJitter" min="0" max="50" step="1" value="0">
-              <div class="form-desc">M/S jitter — perturbs the L-R difference only. Inaudible but breaks stereo fingerprints.</div>
+              <div class="form-desc">Làm nhiễu Stereo để xóa fingerprint.</div>
               <input type="hidden" id="inputSideJitterHz" value="0">
             </div>
 
@@ -371,9 +371,9 @@
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:text-bottom; margin-right:4px; color:var(--primary);">
                         <path d="M2 12h5l2-7 4 14 3-7h6"/>
                       </svg>
-                      Đảo & Dịch nhẹ 3 vùng (Đầu • Giữa • Cuối bài)
+                      Đảo & Dịch nhẹ 3 vùng (Đầu • Giữa • Cuối)
                     </span>
-                    <span class="checkbox-desc">Xử lý âm thanh sạch sẽ 100% như file gốc, chỉ đảo pha vi mô và dịch thời gian cực nhẹ tại 3 điểm nhạy cảm để phá vỡ nhận diện bản quyền Suno.</span>
+                    <span class="checkbox-desc">Đảo vi mô 3 điểm nhạy cảm để phá bản quyền Suno.</span>
                   </div>
                 </label>
                 <span class="badge-subtle" id="badgeThreeZoneStatus">Đang bật (Sạch gốc)</span>
@@ -417,8 +417,8 @@
               <label class="checkbox-row" for="chkNormalize" style="margin-bottom:0;">
                 <input type="checkbox" id="chkNormalize" checked>
                 <div>
-                  <span class="checkbox-title">Normalize peak to 1.0 (Chuẩn hóa âm lượng đỉnh)</span>
-                  <span class="checkbox-desc">Khuếch đại âm lượng to rõ tối đa mà hoàn toàn không bị vỡ tiếng (clipping).</span>
+                  <span class="checkbox-title">Chuẩn hóa âm lượng (Normalize Peak 1.0)</span>
+                  <span class="checkbox-desc">Tăng âm lượng tối đa, chống vỡ tiếng.</span>
                 </div>
               </label>
             </div>
@@ -429,7 +429,7 @@
                 <input type="checkbox" id="chkAutoDetect">
                 <div>
                   <span class="checkbox-title">Auto-detect vocals before lyric bypass</span>
-                  <span class="checkbox-desc">Runs a fast built-in detector (no download, works on mobile) on the decoded audio.</span>
+                  <span class="checkbox-desc">Tự động quét giọng hát trước khi tách.</span>
                 </div>
               </label>
             </div>
@@ -440,7 +440,7 @@
                 <input type="checkbox" id="chkLyricBypass">
                 <div>
                   <span class="checkbox-title">Lyric-detection bypass (vocal stem mangle)</span>
-                  <span class="checkbox-desc">Downloads a ~300 MB separation model on first use, then splits vocals from the instrumental. Skipped when marked instrumental.</span>
+                  <span class="checkbox-desc">Tách vocal chuyên sâu bằng AI model.</span>
                 </div>
               </label>
             </div>
@@ -564,7 +564,7 @@
               Kết quả âm thanh đã xử lý (<span id="resultsCount">0</span>)
             </div>
             <div class="results-sub">
-              Tất cả tên file được tự động tối ưu ≤ 80 ký tự • Tự động tải về máy an toàn lần lượt
+              Tên file ≤ 80 ký tự • Tự động tải an toàn
             </div>
           </div>
           <div class="results-batch-actions">
@@ -612,7 +612,7 @@
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
             </svg>
-            Dán link bài hát Suno (1 hoặc nhiều link)
+            Dán link bài hát Suno
           </label>
           <div class="suno-quick-actions">
             <button type="button" class="btn-suno-quick" id="btnPasteClipboard">
@@ -638,9 +638,9 @@
           </div>
         </div>
 
-        <textarea id="txtSunoLinks" class="suno-textarea" rows="4" placeholder="Dán link bài hát Suno vào đây (1 hoặc nhiều link, mỗi dòng một link)...&#10;Ví dụ: https://suno.com/song/c1a16429-f3fe-4d99-bdcf-61ee13ed6f00"></textarea>
+        <textarea id="txtSunoLinks" class="suno-textarea" rows="4" placeholder="Dán link bài hát Suno (mỗi link 1 dòng)...&#10;Ví dụ: https://suno.com/song/c1a16429-f3fe-4d99-bdcf-61ee13ed6f00"></textarea>
         <div class="suno-input-hints">
-          <span>Hỗ trợ: <code>suno.com/song/[uuid]</code> • <code>suno.com/s/[link]</code> • <code>suno.com/create?song=...</code> • UUID</span>
+          <span>Hỗ trợ link suno.com hoặc UUID</span>
           <span id="sunoLinkCountBadge" class="suno-link-count">0 link đã nhận diện</span>
         </div>
       </div>
@@ -657,7 +657,7 @@
               <option value="mp3" selected>MP3 Master (320 kbps • Xóa Meta)</option>
               <option value="wav">WAV Master (24-bit Lossless • Xóa Meta)</option>
             </select>
-            <div class="form-desc">Xóa sạch 100% thẻ Meta ID3, chất lượng phòng thu.</div>
+            <div class="form-desc">Xóa sạch ID3 tag, chuẩn phòng thu.</div>
           </div>
 
           <div class="suno-opt-col">
@@ -670,7 +670,7 @@
               <option value="ballad">Ballad / Acoustic (-12.5 LUFS • Thanh thoát)</option>
               <option value="vinahouse">Vinahouse / Remix (-8.0 LUFS • Uy lực)</option>
             </select>
-            <div class="form-desc">Tự động cân chỉnh LUFS & True Peak, lặp tối ưu đến 5 lần.</div>
+            <div class="form-desc">Cân chỉnh LUFS & True Peak chuẩn EBU R128.</div>
           </div>
 
           <div class="suno-opt-col">
@@ -681,7 +681,7 @@
             <select id="selSunoActionMode" class="select-sm">
               <option value="download_only" selected>Chỉ tải file gốc (Direct Download)</option>
             </select>
-            <div class="form-desc">Tải trực tiếp âm thanh đã auto-master chuyên sâu, sạch siêu dữ liệu.</div>
+            <div class="form-desc">Tải âm thanh đã auto-master, sạch siêu dữ liệu.</div>
           </div>
         </div>
 
@@ -695,9 +695,9 @@
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
-                Tự động tải về máy an toàn (chống lỗi file trắng)
+                Tự động tải về máy an toàn
               </span>
-              <span class="checkbox-desc">Đặt tên file chuẩn theo bài hát Suno, tải file MP3/WAV hoàn chỉnh không dính UUID.</span>
+              <span class="checkbox-desc">Tên file theo tên bài hát, chống lỗi file trắng/mất đuôi.</span>
             </div>
           </label>
         </div>
@@ -727,7 +727,7 @@
               </svg>
               Danh sách bài hát (<span id="sunoTracksCount">0</span>)
             </div>
-            <div class="results-sub">Không gian 3D • Trong sáng & thanh thoát • Xóa sạch 100% ID3 tag</div>
+            <div class="results-sub">Chuẩn 3D Master • Xóa sạch ID3 tag</div>
           </div>
 
           <div class="results-batch-actions">
@@ -765,7 +765,7 @@
             </svg>
           </div>
           <div class="stat-content">
-            <span class="stat-label">Tổng lượt xử lý âm thanh</span>
+            <span class="stat-label">Tổng lượt xử lý</span>
             <span class="stat-number" id="footerTotalProcessed">0</span>
           </div>
         </div>
@@ -779,7 +779,7 @@
             </svg>
           </div>
           <div class="stat-content">
-            <span class="stat-label">Tổng lượt tải từ Suno AI</span>
+            <span class="stat-label">Lượt tải Suno</span>
             <span class="stat-number" id="footerTotalSuno">0</span>
           </div>
         </div>
@@ -793,7 +793,7 @@
             </svg>
           </div>
           <div class="stat-content">
-            <span class="stat-label">Số file riêng biệt đã xử lý</span>
+            <span class="stat-label">Số file đã xử lý</span>
             <span class="stat-number" id="footerTotalUniqueFiles">0 tệp</span>
           </div>
           <span class="stat-toggle-chevron" id="fileStatsChevron">▾</span>
@@ -804,20 +804,20 @@
       <div class="file-stats-drawer" id="fileStatsDrawer" style="display: none;">
         <div class="file-stats-drawer-header">
           <div class="drawer-title-group">
-            <span class="drawer-title">📊 Lịch sử & Số lượt xử lý của từng file âm thanh</span>
-            <span class="drawer-subtitle">Lưu trữ tự động trên trình duyệt</span>
+            <span class="drawer-title">📊 Lịch sử xử lý từng file</span>
+            <span class="drawer-subtitle">Lưu cục bộ trên trình duyệt</span>
           </div>
           <button type="button" class="btn-clear-file-stats" id="btnClearFileStats" title="Đặt lại bộ đếm thống kê">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
-            Xóa lịch sử thống kê
+            Xóa lịch sử
           </button>
         </div>
         <div class="file-stats-table-wrapper">
           <div class="file-stats-list" id="fileStatsList">
-            <div class="file-stats-empty">Chưa có tệp âm thanh nào được xử lý. Khi bạn xử lý âm thanh, số lượt của từng tệp sẽ được ghi nhận tại đây.</div>
+            <div class="file-stats-empty">Chưa có tệp âm thanh nào được xử lý.</div>
           </div>
         </div>
       </div>
