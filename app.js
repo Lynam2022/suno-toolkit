@@ -1571,21 +1571,27 @@ function setTrackProgress(uuid, percent, label, isSuccess = false, isError = fal
 
 async function downloadTrackFormatWithProgress(track, format, preset, onProgress) {
   const url = `${API_BASE}/api/suno-audio?uuid=${track.uuid}&format=${format}&preset=${preset}`;
-  const label = `Đang tải ${format.toUpperCase()} (${preset.toUpperCase()})...`;
+  let currentPct = 8;
+  let statusText = `Đang kết nối & xử lý ${format.toUpperCase()} (${preset.toUpperCase()})...`;
+  onProgress(currentPct, statusText);
 
-  let currentPct = 6;
-  onProgress(currentPct, label);
-
+  // Smooth progressive indicator that continuously updates so it never looks frozen
   const timer = setInterval(() => {
-    if (currentPct < 40) {
+    if (currentPct < 45) {
       currentPct += 4;
-    } else if (currentPct < 70) {
-      currentPct += 2;
-    } else if (currentPct < 88) {
-      currentPct += 1;
+      statusText = `Đang tải luồng âm thanh gốc...`;
+    } else if (currentPct < 75) {
+      currentPct += 2.5;
+      statusText = `Đang Auto-Master ${format.toUpperCase()} (${preset.toUpperCase()})...`;
+    } else if (currentPct < 90) {
+      currentPct += 1.2;
+      statusText = `Đang cân chỉnh LUFS & True Peak...`;
+    } else if (currentPct < 96) {
+      currentPct += 0.4;
+      statusText = `Đang hoàn tất xuất file âm thanh...`;
     }
-    onProgress(currentPct, label);
-  }, 250);
+    onProgress(Math.floor(currentPct), statusText);
+  }, 280);
 
   try {
     let res = await fetch(url);
@@ -1609,13 +1615,13 @@ async function downloadTrackFormatWithProgress(track, format, preset, onProgress
         if (done) break;
         chunks.push(value);
         receivedBytes += value.length;
-        const streamPct = Math.min(99, 88 + Math.round((receivedBytes / totalBytes) * 11));
-        onProgress(streamPct, `Đang tải ${format.toUpperCase()} (${preset.toUpperCase()})...`);
+        const streamPct = Math.min(99, 90 + Math.round((receivedBytes / totalBytes) * 9));
+        onProgress(streamPct, `Đang tải về máy (${(receivedBytes / (1024 * 1024)).toFixed(1)} MB)...`);
       }
       blob = new Blob(chunks, { type: res.headers.get('content-type') || (format === 'wav' ? 'audio/wav' : 'audio/mpeg') });
     } else {
       clearInterval(timer);
-      onProgress(95, `Đang xử lý xuất file...`);
+      onProgress(97, `Đang xuất file...`);
       blob = await res.blob();
     }
 
@@ -1652,12 +1658,12 @@ async function handleSingleTrackDownload(track, format = 'mp3', autoProcess = fa
       const selSunoFormat = document.getElementById('selSunoFormat');
       const targetFormat = selSunoFormat ? selSunoFormat.value : 'mp3';
 
-      if ((targetFormat === 'mp3' || targetFormat === 'both') && result.mp3Blob) {
+      if ((targetFormat === 'mp3') && result.mp3Blob) {
         const fname = sanitizeMediaFilename(track.title, 'anonymized', 'mp3');
         downloadBlobSafely(result.mp3Blob, fname);
         addLog(`✓ Đã tải MP3 xử lý: ${fname}`);
       }
-      if ((targetFormat === 'wav' || targetFormat === 'both') && result.wavBlob) {
+      if ((targetFormat === 'wav') && result.wavBlob) {
         const fname = sanitizeMediaFilename(track.title, 'anonymized', 'wav');
         downloadBlobSafely(result.wavBlob, fname);
         addLog(`✓ Đã tải WAV xử lý: ${fname}`);
@@ -1693,28 +1699,6 @@ async function handleSingleTrackDownload(track, format = 'mp3', autoProcess = fa
         addLog(`✓ Đã tải MP3 Master 320k (${preset.toUpperCase()} • Sạch Meta): ${fname}`);
         recordSunoDownload(1);
         setTrackProgress(track.uuid, 100, '✓ Đã tải xong!', true);
-        return;
-      }
-
-      if (format === 'both') {
-        setTrackProgress(track.uuid, 10, `Đang tải WAV (${preset.toUpperCase()})...`);
-        const wavBlob = await downloadTrackFormatWithProgress(track, 'wav', preset, (pct, msg) => {
-          setTrackProgress(track.uuid, Math.round(pct * 0.5), msg);
-        });
-        const fnameWav = sanitizeMediaFilename(track.title, `master_${preset}`, 'wav');
-        downloadBlobSafely(wavBlob, fnameWav);
-        addLog(`✓ Đã tải WAV Master: ${fnameWav}`);
-
-        setTrackProgress(track.uuid, 55, `Đang tải MP3 (${preset.toUpperCase()})...`);
-        const mp3Blob = await downloadTrackFormatWithProgress(track, 'mp3', preset, (pct, msg) => {
-          setTrackProgress(track.uuid, 50 + Math.round(pct * 0.5), msg);
-        });
-        const fnameMp3 = sanitizeMediaFilename(track.title, `master_${preset}`, 'mp3');
-        downloadBlobSafely(mp3Blob, fnameMp3);
-        addLog(`✓ Đã tải MP3 Master: ${fnameMp3}`);
-
-        recordSunoDownload(2);
-        setTrackProgress(track.uuid, 100, '✓ Đã tải xong cả 2 file!', true);
         return;
       }
     }
@@ -1809,10 +1793,6 @@ function renderSunoTrackList() {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
           Tải WAV
         </button>
-        <button type="button" class="btn-track-action accent btn-dl-both" data-uuid="${track.uuid}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="3" x2="12" y2="15"></line><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path></svg>
-          Tải cả hai
-        </button>
       </div>
     `;
 
@@ -1858,13 +1838,6 @@ function renderSunoTrackList() {
     btn.addEventListener('click', () => {
       const track = sunoResolvedTracks.find(t => t.uuid === btn.dataset.uuid);
       if (track) handleSingleTrackDownload(track, 'wav', false);
-    });
-  });
-
-  sunoTrackList.querySelectorAll('.btn-dl-both').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const track = sunoResolvedTracks.find(t => t.uuid === btn.dataset.uuid);
-      if (track) handleSingleTrackDownload(track, 'both', false);
     });
   });
 }
@@ -1960,7 +1933,6 @@ function setupSunoDownloaderEvents() {
 
   const btnSunoDownloadAllMp3 = document.getElementById('btnSunoDownloadAllMp3');
   const btnSunoDownloadAllWav = document.getElementById('btnSunoDownloadAllWav');
-  const btnSunoDownloadAllBoth = document.getElementById('btnSunoDownloadAllBoth');
 
   if (tabBtnAnonymize) tabBtnAnonymize.addEventListener('click', () => switchMainTab('anonymize'));
   if (tabBtnDownloader) tabBtnDownloader.addEventListener('click', () => switchMainTab('downloader'));
@@ -2013,7 +1985,6 @@ function setupSunoDownloaderEvents() {
       const v = selSunoFormat.value;
       if (v === 'mp3') valSunoFormat.textContent = 'MP3 Master';
       else if (v === 'wav') valSunoFormat.textContent = 'WAV Master';
-      else if (v === 'both') valSunoFormat.textContent = 'Cả MP3 & WAV';
     });
   }
 
@@ -2063,15 +2034,6 @@ function setupSunoDownloaderEvents() {
     btnSunoDownloadAllWav.addEventListener('click', async () => {
       for (const track of sunoResolvedTracks) {
         await handleSingleTrackDownload(track, 'wav', false);
-        await new Promise(r => setTimeout(r, 600));
-      }
-    });
-  }
-
-  if (btnSunoDownloadAllBoth) {
-    btnSunoDownloadAllBoth.addEventListener('click', async () => {
-      for (const track of sunoResolvedTracks) {
-        await handleSingleTrackDownload(track, 'both', false);
         await new Promise(r => setTimeout(r, 600));
       }
     });
