@@ -1,4 +1,8 @@
-import { processAudioPipeline, decodeAudioFile, encodeWAV, encodeMP3 } from './dsp.js';
+// DSP engine functions loaded globally from dsp.js
+const { processAudioPipeline, decodeAudioFile, encodeWAV, encodeMP3 } = (typeof window !== 'undefined' ? window : {});
+
+// Automatic API Base URL (supports both http:// and direct file:/// opening)
+const API_BASE = (typeof window !== 'undefined' && window.location.protocol === 'file:') ? 'http://127.0.0.1:3300' : '';
 
 // Default presets matching chunks.md
 const PRESETS = {
@@ -156,7 +160,7 @@ const PRESETS = {
 };
 
 // Filename Sanitizer (Skill: media-download-uuid-fix) - Strictly <= 80 characters
-export function sanitizeMediaFilename(rawName, suffixTag = 'suno_fixed', extension = 'mp3') {
+function sanitizeMediaFilename(rawName, suffixTag = 'suno_fixed', extension = 'mp3') {
   let base = 'audio';
   if (rawName && typeof rawName === 'string') {
     // Strip existing extension
@@ -295,22 +299,6 @@ const chkZoneHead = document.getElementById('chkZoneHead');
 const chkZoneMid = document.getElementById('chkZoneMid');
 const chkZoneTail = document.getElementById('chkZoneTail');
 
-// URL Downloader DOM Elements
-const inputAudioUrl = document.getElementById('inputAudioUrl');
-const btnPasteClipboard = document.getElementById('btnPasteClipboard');
-const selLinkFormat = document.getElementById('selLinkFormat');
-const chkAutoProcessAfterDownload = document.getElementById('chkAutoProcessAfterDownload');
-const btnFetchUrl = document.getElementById('btnFetchUrl');
-const btnFetchUrlLabel = document.getElementById('btnFetchUrlLabel');
-const urlFeedbackBox = document.getElementById('urlFeedbackBox');
-const urlStatusSpinner = document.getElementById('urlStatusSpinner');
-const urlStatusMessage = document.getElementById('urlStatusMessage');
-const urlSuccessActions = document.getElementById('urlSuccessActions');
-const urlTrackTitle = document.getElementById('urlTrackTitle');
-const urlTrackSize = document.getElementById('urlTrackSize');
-const btnDlFetchedMp3 = document.getElementById('btnDlFetchedMp3');
-const btnDlFetchedWav = document.getElementById('btnDlFetchedWav');
-const btnProcessFetchedNow = document.getElementById('btnProcessFetchedNow');
 
 
 const STAGES = ['input', 'model', 'separate', 'shape', 'file'];
@@ -1160,7 +1148,8 @@ async function startBatchProcessing() {
       }
     }
     addLog(`✓ Đã hoàn tất xử lý toàn bộ danh sách tệp.`);
-
+  }
+}
 
 // Download All MP3s helper
 async function downloadAllMp3s() {
@@ -1264,129 +1253,6 @@ function setupEvents() {
     selThreeZoneIntensity.addEventListener('change', updateThreeZoneIntensityLabel);
   }
 
-  // URL Audio Downloader Logic & Events
-  async function handleUrlDownload() {
-    const url = (inputAudioUrl ? inputAudioUrl.value : '').trim();
-    if (!url) {
-      alert('Vui lòng dán link bài hát (YouTube, SoundCloud, Suno, hoặc link MP3/WAV trực tiếp).');
-      if (inputAudioUrl) inputAudioUrl.focus();
-      return;
-    }
-
-    const format = selLinkFormat ? selLinkFormat.value : 'both';
-    const autoProcess = chkAutoProcessAfterDownload ? chkAutoProcessAfterDownload.checked : true;
-
-    // Set loading state
-    btnFetchUrl.disabled = true;
-    btnFetchUrlLabel.textContent = 'Đang tải & xử lý...';
-    urlFeedbackBox.style.display = 'block';
-    urlStatusSpinner.style.display = 'block';
-    urlStatusMessage.textContent = 'Đang kết nối tới URL và trích xuất âm thanh chất lượng cao (320kbps MP3 / WAV)...';
-    urlSuccessActions.style.display = 'none';
-
-    try {
-      addLog(`Bắt đầu tải nhạc từ URL: ${url}`);
-      const response = await fetch('/api/download-audio', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, format })
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || `Lỗi tải tệp (${response.status})`);
-      }
-
-      addLog(`✓ Đã tải thành công: ${data.title} (${(data.sizeBytes / (1024 * 1024)).toFixed(2)} MB)`);
-
-      // Update UI success state
-      urlStatusSpinner.style.display = 'none';
-      urlStatusMessage.textContent = '✓ Đã tải và trích xuất âm thanh thành công!';
-      urlTrackTitle.textContent = data.title;
-      urlTrackSize.textContent = `${(data.sizeBytes / (1024 * 1024)).toFixed(2)} MB`;
-
-      // Setup direct download buttons
-      if (btnDlFetchedMp3) {
-        btnDlFetchedMp3.href = data.mp3Url;
-        btnDlFetchedMp3.setAttribute('download', data.mp3File || 'track.mp3');
-        btnDlFetchedMp3.style.display = data.mp3Url ? 'inline-flex' : 'none';
-      }
-      if (btnDlFetchedWav) {
-        btnDlFetchedWav.href = data.wavUrl;
-        btnDlFetchedWav.setAttribute('download', data.wavFile || 'track.wav');
-        btnDlFetchedWav.style.display = data.wavUrl ? 'inline-flex' : 'none';
-      }
-
-      urlSuccessActions.style.display = 'block';
-
-      // Fetch the audio blob into browser memory to create a native File object for the DSP pipeline
-      urlStatusMessage.textContent = 'Đang nạp file vào bộ xử lý Web Audio DSP...';
-      const audioResp = await fetch(data.primaryUrl);
-      const audioBlob = await audioResp.blob();
-      const audioFile = new File([audioBlob], data.primaryFile, {
-        type: data.primaryFile.endsWith('.wav') ? 'audio/wav' : 'audio/mpeg',
-        lastModified: Date.now()
-      });
-
-      // Add to batch queue
-      handleFilesSelected([audioFile]);
-
-      // If autoProcess is enabled, kick off the batch processing pipeline immediately
-      if (autoProcess) {
-        urlStatusMessage.textContent = '✓ Đã nạp thành công! Đang tiến hành xử lý ẩn danh theo cấu hình...';
-        addLog(`Tự động khởi động tiến trình xử lý cho: ${data.primaryFile}`);
-        setTimeout(() => {
-          if (!isBatchProcessing) {
-            startBatchProcessing();
-          }
-        }, 400);
-      } else {
-        urlStatusMessage.textContent = '✓ Đã nạp tệp vào danh sách hàng đợi sẵn sàng xử lý.';
-      }
-
-    } catch (err) {
-      console.error('URL download error:', err);
-      addLog(`Lỗi tải từ link: ${err.message}`);
-      urlStatusSpinner.style.display = 'none';
-      urlStatusMessage.innerHTML = `<span style="color:var(--danger);">⚠️ Lỗi: ${err.message}</span>`;
-    } finally {
-      btnFetchUrl.disabled = false;
-      btnFetchUrlLabel.textContent = 'Tải nhạc & Xử lý ngay';
-    }
-  }
-
-  if (btnFetchUrl) {
-    btnFetchUrl.addEventListener('click', handleUrlDownload);
-  }
-  if (inputAudioUrl) {
-    inputAudioUrl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        handleUrlDownload();
-      }
-    });
-  }
-  if (btnPasteClipboard) {
-    btnPasteClipboard.addEventListener('click', async () => {
-      try {
-        const text = await navigator.clipboard.readText();
-        if (text) {
-          inputAudioUrl.value = text.trim();
-          inputAudioUrl.focus();
-        }
-      } catch (err) {
-        console.warn('Clipboard read failed:', err);
-        inputAudioUrl.focus();
-      }
-    });
-  }
-  if (btnProcessFetchedNow) {
-    btnProcessFetchedNow.addEventListener('click', () => {
-      if (!isBatchProcessing) {
-        startBatchProcessing();
-      }
-    });
-  }
 
 
   // Drag & drop file handling (Supports multiple files simultaneously)
@@ -1574,7 +1440,7 @@ async function fetchSunoAudioBlob(audioUrl, track = null) {
   // 1. If uuid is available, prioritize our server's stream or audio endpoint
   if (track && track.uuid) {
     try {
-      const sRes = await fetch(`/api/suno-stream?uuid=${track.uuid}`);
+      const sRes = await fetch(`${API_BASE}/api/suno-stream?uuid=${track.uuid}`);
       if (sRes.ok) {
         const b = await sRes.blob();
         if (b.size > 1000) return b;
@@ -1582,7 +1448,7 @@ async function fetchSunoAudioBlob(audioUrl, track = null) {
     } catch (_) {}
 
     try {
-      const aRes = await fetch(`/api/suno-audio?uuid=${track.uuid}&format=mp3&preset=pop`);
+      const aRes = await fetch(`${API_BASE}/api/suno-audio?uuid=${track.uuid}&format=mp3&preset=pop`);
       if (aRes.ok) {
         const b = await aRes.blob();
         if (b.size > 1000) return b;
@@ -1602,9 +1468,9 @@ async function fetchSunoAudioBlob(audioUrl, track = null) {
       console.warn('Direct fetch failed, falling back to proxy:', e);
     }
 
-    if (!audioUrl.startsWith('/api/')) {
+    if (!audioUrl.startsWith('/api/') && !audioUrl.startsWith(API_BASE + '/api/')) {
       try {
-        const proxyUrl = `/api/suno-proxy?url=${encodeURIComponent(audioUrl)}`;
+        const proxyUrl = `${API_BASE}/api/suno-proxy?url=${encodeURIComponent(audioUrl)}`;
         const proxyRes = await fetch(proxyUrl);
         if (proxyRes.ok) {
           const b = await proxyRes.blob();
@@ -1624,7 +1490,7 @@ async function fetchSunoAudioBlob(audioUrl, track = null) {
     ];
     for (const rawUrl of candidateUrls) {
       try {
-        const pUrl = `/api/suno-proxy?url=${encodeURIComponent(rawUrl)}`;
+        const pUrl = `${API_BASE}/api/suno-proxy?url=${encodeURIComponent(rawUrl)}`;
         const pRes = await fetch(pUrl);
         if (pRes.ok) {
           const b = await pRes.blob();
@@ -1703,7 +1569,7 @@ function setTrackProgress(uuid, percent, label, isSuccess = false, isError = fal
 }
 
 async function downloadTrackFormatWithProgress(track, format, preset, onProgress) {
-  const url = `/api/suno-audio?uuid=${track.uuid}&format=${format}&preset=${preset}`;
+  const url = `${API_BASE}/api/suno-audio?uuid=${track.uuid}&format=${format}&preset=${preset}`;
   const label = `Đang tải ${format.toUpperCase()} (${preset.toUpperCase()})...`;
 
   let currentPct = 6;
@@ -1723,7 +1589,7 @@ async function downloadTrackFormatWithProgress(track, format, preset, onProgress
   try {
     let res = await fetch(url);
     if (!res.ok) {
-      res = await fetch(`/api/suno-stream?uuid=${track.uuid}`);
+      res = await fetch(`${API_BASE}/api/suno-stream?uuid=${track.uuid}`);
     }
     if (!res.ok) throw new Error(`Lỗi tải ${format.toUpperCase()} (${res.status})`);
 
@@ -2024,7 +1890,7 @@ async function fetchAndResolveSunoTracks() {
   btnFetchSunoLabel.textContent = `Đang phân tích ${validInputs.length} bài hát từ Suno...`;
 
   try {
-    const res = await fetch('/api/suno-resolve', {
+    const res = await fetch(`${API_BASE}/api/suno-resolve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ urls: validInputs })
@@ -2166,7 +2032,7 @@ function setupSunoDownloaderEvents() {
       sunoResolvedTracks.forEach(track => {
         const audioEl = document.querySelector(`#suno-track-${track.uuid} audio`);
         if (audioEl) {
-          audioEl.src = `/api/suno-audio?uuid=${track.uuid}&format=mp3&preset=${v}`;
+          audioEl.src = `${API_BASE}/api/suno-audio?uuid=${track.uuid}&format=mp3&preset=${v}`;
         }
       });
       addLog(`Đã chọn preset Auto-Master: ${selSunoPreset.options[selSunoPreset.selectedIndex].text}`);
@@ -2341,9 +2207,15 @@ function initFooterStatsEvents() {
   }
 }
 
-// Initialize on page load
-window.addEventListener('DOMContentLoaded', () => {
+// Initialize on page load (handles both deferred/module and regular script execution)
+function initApp() {
   setupEvents();
   applyPreset('subtle'); // Matches user screenshot defaults
-});
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 

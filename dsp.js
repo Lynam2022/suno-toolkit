@@ -21,7 +21,7 @@ function clampToNearest(val, list) {
 }
 
 // 1. WAV Encoder (16-bit PCM Stereo/Mono)
-export function encodeWAV(channels, sampleRate) {
+function encodeWAV(channels, sampleRate) {
   const numChannels = channels.length;
   const numSamples = channels[0] ? channels[0].length : 0;
   const bytesPerSample = 2;
@@ -78,7 +78,7 @@ export function encodeWAV(channels, sampleRate) {
 }
 
 // 2. Decode Audio File into Float32Array channels using browser AudioContext
-export async function decodeAudioFile(fileOrBlob) {
+async function decodeAudioFile(fileOrBlob) {
   const arrayBuffer = await fileOrBlob.arrayBuffer();
   const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
   const ctx = new AudioCtxClass();
@@ -101,7 +101,7 @@ export async function decodeAudioFile(fileOrBlob) {
 }
 
 // 3. High-Quality Offline AudioContext Resampling
-export async function resampleOffline(channels, fromRate, toRate) {
+async function resampleOffline(channels, fromRate, toRate) {
   if (fromRate === toRate || !channels || channels.length === 0) return channels;
   const len = channels[0].length;
   if (len === 0) return channels;
@@ -128,7 +128,7 @@ export async function resampleOffline(channels, fromRate, toRate) {
 }
 
 // 4. Time Stretch using SOLA (Hann-windowed Overlap-Add) with tail-padding for exact length
-export function timeStretch(signal, stretchFactor, windowSize = 2048, hopSize = 512) {
+function timeStretch(signal, stretchFactor, windowSize = 2048, hopSize = 512) {
   if (stretchFactor === 1 || signal.length < windowSize) {
     return signal.slice();
   }
@@ -167,7 +167,7 @@ export function timeStretch(signal, stretchFactor, windowSize = 2048, hopSize = 
 }
 
 // 5. Linear Resampling
-export function resample(signal, factor) {
+function resample(signal, factor) {
   if (factor === 1) return signal.slice();
   const newLength = Math.max(1, Math.round(signal.length * factor));
   const output = new Float32Array(newLength);
@@ -184,7 +184,7 @@ export function resample(signal, factor) {
 }
 
 // 6. Pitch Shifting (constant duration, changed pitch)
-export function pitchShift(signal, semitones) {
+function pitchShift(signal, semitones) {
   if (semitones === 0) return signal.slice();
   const ratio = Math.pow(2, semitones / 12);
   const stretched = timeStretch(signal, ratio);
@@ -197,7 +197,7 @@ export function pitchShift(signal, semitones) {
 }
 
 // 7. Pitch Jitter (Triangle LFO pitch wobble)
-export function pitchJitter(signal, sampleRate, cents, lfoHz) {
+function pitchJitter(signal, sampleRate, cents, lfoHz) {
   if (cents <= 0 || lfoHz <= 0) return signal.slice();
   const pitchRatio = Math.pow(2, cents / 1200);
   const lfoStep = lfoHz / sampleRate;
@@ -225,7 +225,7 @@ export function pitchJitter(signal, sampleRate, cents, lfoHz) {
 }
 
 // 8. Mid/Side (Stereo correlation perturbation) Jitter
-export function midSideJitter(channels, sampleRate, cents, lfoHz) {
+function midSideJitter(channels, sampleRate, cents, lfoHz) {
   if (cents <= 0 || lfoHz <= 0 || channels.length < 2) return channels;
   const left = channels[0];
   const right = channels[1];
@@ -283,7 +283,7 @@ function applyBiquad(signal, coeffs) {
 }
 
 // 10. EQ Tilt
-export function eqTilt(channels, sampleRate, bands, maxDb, seed = 659918) {
+function eqTilt(channels, sampleRate, bands, maxDb, seed = 659918) {
   if (bands <= 0 || maxDb <= 0) return channels;
   const minHz = 120;
   const maxHz = Math.min(10000, sampleRate / 2 - 100);
@@ -316,7 +316,7 @@ export function eqTilt(channels, sampleRate, bands, maxDb, seed = 659918) {
 }
 
 // 11. Peak Smear
-export function peakSmear(channels, sampleRate, bands, depthDb, lfoHz) {
+function peakSmear(channels, sampleRate, bands, depthDb, lfoHz) {
   if (bands <= 0 || depthDb <= 0 || lfoHz <= 0) return channels;
   const minHz = 500;
   const maxHz = Math.min(8000, sampleRate / 2 - 100);
@@ -378,7 +378,7 @@ export function peakSmear(channels, sampleRate, bands, depthDb, lfoHz) {
 }
 
 // 12. Sub-Audio Tone Injection
-export function dcInject(channels, sampleRate, subHz, gainDb) {
+function dcInject(channels, sampleRate, subHz, gainDb) {
   if (subHz <= 0 || !Number.isFinite(gainDb)) return channels;
   const gain = Math.pow(10, gainDb / 20);
   if (gain <= 0) return channels;
@@ -395,7 +395,7 @@ export function dcInject(channels, sampleRate, subHz, gainDb) {
 }
 
 // 13. Center Channel Vocal Cancellation (Instrumental Light)
-export function vocalCancelCenter(channels) {
+function vocalCancelCenter(channels) {
   if (channels.length < 2) return channels;
   const l = channels[0];
   const r = channels[1];
@@ -412,7 +412,7 @@ export function vocalCancelCenter(channels) {
 }
 
 // 14. Offline AudioContext Processing (Notch filter + Synthetic Reverb)
-export async function applyFiltersAndReverb(channels, sampleRate, targetSampleRate, notchHz, reverbWetPct) {
+async function applyFiltersAndReverb(channels, sampleRate, targetSampleRate, notchHz, reverbWetPct) {
   const hasNotch = notchHz && notchHz > 0;
   const hasReverb = reverbWetPct > 0;
   const needsResample = targetSampleRate && targetSampleRate !== sampleRate;
@@ -498,7 +498,7 @@ export async function applyFiltersAndReverb(channels, sampleRate, targetSampleRa
 }
 
 // 15. Peak Normalization
-export function normalizePeak(channels, target = 1.0) {
+function normalizePeak(channels, target = 1.0) {
   let maxVal = 0;
   for (const ch of channels) {
     for (let i = 0; i < ch.length; i++) {
@@ -518,7 +518,7 @@ export function normalizePeak(channels, target = 1.0) {
 }
 
 // 16. Silence Padding
-export function padSilence(channels, sampleRate, seconds) {
+function padSilence(channels, sampleRate, seconds) {
   if (seconds <= 0) return channels;
   const padSamples = Math.floor(seconds * sampleRate);
   return channels.map((ch) => {
@@ -531,7 +531,7 @@ export function padSilence(channels, sampleRate, seconds) {
 // 16.5 Three-Zone Micro-Shift & Inversion (Đầu • Giữa • Cuối)
 // Tinh vi hóa 3 vùng nhạy cảm của bài hát (Intro, Mid, Outro) với độ lệch thời gian vi mô và đảo pha stereo M/S
 // Giữ nguyên 100% độ trong trẻo, không méo tiếng, không giật cục, triệt tiêu hash nhận diện bản quyền
-export function threeZoneMicroShiftAndInvert(channels, sampleRate, options = {}) {
+function threeZoneMicroShiftAndInvert(channels, sampleRate, options = {}) {
   if (!channels || channels.length === 0) return channels;
   const {
     intensity = "subtle",
@@ -659,7 +659,7 @@ export function threeZoneMicroShiftAndInvert(channels, sampleRate, options = {})
 }
 
 // 17. Fast Vocal Detection
-export function detectVocals(channels, sampleRate) {
+function detectVocals(channels, sampleRate) {
   const len = channels[0] ? channels[0].length : 0;
   if (len === 0) return { hasVocals: true, score: 0.5 };
   const chunkLen = Math.min(len, Math.floor(30 * sampleRate));
@@ -684,7 +684,7 @@ export function detectVocals(channels, sampleRate) {
 }
 
 // Build standard ID3v2.3 Tag Header for 100% Windows Explorer, Windows Media Player & device compatibility
-export function createID3v2Tag(metadata = {}) {
+function createID3v2Tag(metadata = {}) {
   const frames = [];
 
   function addTextFrame(frameId, text) {
@@ -750,7 +750,7 @@ export function createID3v2Tag(metadata = {}) {
 }
 
 // 18. MP3 Encoder (via lamejs with sample rate auto-clamping, ID3v2.3 metadata & standard audio/mpeg container)
-export async function encodeMP3(channels, sampleRate, bitrateKbps = 320, onProgress = null, metadata = null) {
+async function encodeMP3(channels, sampleRate, bitrateKbps = 320, onProgress = null, metadata = null) {
   const lame = (typeof window !== 'undefined' && window.lamejs) || (typeof lamejs !== 'undefined' ? lamejs : (typeof globalThis !== 'undefined' ? globalThis.lamejs : null));
   if (!lame) {
     throw new Error("LameJS is not loaded.");
@@ -814,7 +814,7 @@ export async function encodeMP3(channels, sampleRate, bitrateKbps = 320, onProgr
 }
 
 // 19. Complete Processing Pipeline
-export async function processAudioPipeline(file, options, callbacks = {}) {
+async function processAudioPipeline(file, options, callbacks = {}) {
   const { onProgress, onLog, signal } = callbacks;
   const checkAbort = () => {
     if (signal && signal.aborted) {
@@ -1038,5 +1038,46 @@ export async function processAudioPipeline(file, options, callbacks = {}) {
     sampleRate: state.sampleRate,
     channels: state.channels.length,
     durationSec: (state.channels[0]?.length || 0) / state.sampleRate
+  };
+}
+
+// Expose functions globally for Browser environments (both file:// and http://)
+if (typeof window !== 'undefined') {
+  window.encodeWAV = encodeWAV;
+  window.decodeAudioFile = decodeAudioFile;
+  window.resampleOffline = resampleOffline;
+  window.timeStretch = timeStretch;
+  window.resample = resample;
+  window.pitchShift = pitchShift;
+  window.pitchJitter = pitchJitter;
+  window.midSideJitter = midSideJitter;
+  window.eqTilt = eqTilt;
+  window.peakSmear = peakSmear;
+  window.dcInject = dcInject;
+  window.vocalCancelCenter = vocalCancelCenter;
+  window.applyFiltersAndReverb = applyFiltersAndReverb;
+  window.normalizePeak = normalizePeak;
+  window.padSilence = padSilence;
+  window.threeZoneMicroShiftAndInvert = threeZoneMicroShiftAndInvert;
+  window.detectVocals = detectVocals;
+  window.createID3v2Tag = createID3v2Tag;
+  window.encodeMP3 = encodeMP3;
+  window.processAudioPipeline = processAudioPipeline;
+
+  window.SunoDSP = {
+    encodeWAV, decodeAudioFile, resampleOffline, timeStretch, resample,
+    pitchShift, pitchJitter, midSideJitter, eqTilt, peakSmear, dcInject,
+    vocalCancelCenter, applyFiltersAndReverb, normalizePeak, padSilence,
+    threeZoneMicroShiftAndInvert, detectVocals, createID3v2Tag, encodeMP3,
+    processAudioPipeline
+  };
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    encodeWAV, decodeAudioFile, resampleOffline, timeStretch, resample,
+    pitchShift, pitchJitter, midSideJitter, eqTilt, peakSmear, dcInject,
+    vocalCancelCenter, applyFiltersAndReverb, normalizePeak, padSilence,
+    threeZoneMicroShiftAndInvert, detectVocals, createID3v2Tag, encodeMP3,
+    processAudioPipeline
   };
 }
