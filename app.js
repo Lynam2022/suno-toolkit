@@ -2167,7 +2167,7 @@ function initFooterStatsEvents() {
 // Initialize on page load (handles both deferred/module and regular script execution)
 function initApp() {
   setupEvents();
-  applyPreset('aggressive'); // Matches user screenshot defaults for Aggressive preset
+  applyPreset('moderate'); // Matches user screenshot defaults for Moderate preset
 }
 
 if (document.readyState === 'loading') {
