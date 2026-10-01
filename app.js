@@ -8,29 +8,29 @@ const API_BASE = (typeof window !== 'undefined' && window.location.protocol === 
 // Default presets matching chunks.md
 const PRESETS = {
   subtle: {
-    instrumentalMode: "light",
+    instrumentalMode: "off",
     pitchSemitones: 0,
-    speedFactor: 1.0,
+    speedFactor: 0.95,
     sampleRate: 48000,
     eqNotchHz: 0,
-    reverbWetPct: 0,
-    silencePadSec: 0,
+    reverbWetPct: 15,
+    silencePadSec: 0.5,
     normalize: true,
-    mp3RoundTripBitrate: 320,
+    mp3RoundTripBitrate: 128,
     mp3UseVbr: false,
-    eqTiltMaxDb: 0,
+    eqTiltMaxDb: 1.5,
     eqTiltBands: 0,
     mixJitterCents: 0,
-    mixJitterHz: 0,
-    midSideJitterCents: 0,
-    midSideJitterHz: 0,
+    mixJitterHz: 0.3,
+    midSideJitterCents: 8,
+    midSideJitterHz: 0.25,
     dcInjectSubHz: 0,
     dcInjectGainDb: -60,
     peakSmearBands: 0,
     peakSmearDepthDb: 0,
     peakSmearHz: 0,
     instrumental: false,
-    autoDetectVocals: false,
+    autoDetectVocals: true,
     lyricBypass: false,
     threeZoneShift: true,
     threeZoneIntensity: "subtle",
@@ -2166,7 +2166,7 @@ function initFooterStatsEvents() {
 // Initialize on page load (handles both deferred/module and regular script execution)
 function initApp() {
   setupEvents();
-  applyPreset('moderate'); // Matches user screenshot defaults for Moderate preset
+  applyPreset('subtle'); // Matches user screenshot defaults for Subtle preset
 }
 
 if (document.readyState === 'loading') {
