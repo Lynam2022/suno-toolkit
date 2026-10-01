@@ -70,31 +70,32 @@ const PRESETS = {
     zoneTail: true
   },
   aggressive: {
-    instrumentalMode: "off",
-    pitchSemitones: -4,
-    speedFactor: 0.93,
+    instrumentalMode: "light",
+    pitchSemitones: 0,
+    speedFactor: 1.0,
     sampleRate: 48000,
-    eqNotchHz: 300,
-    reverbWetPct: 25,
-    silencePadSec: 0.5,
+    eqNotchHz: 0,
+    reverbWetPct: 0,
+    silencePadSec: 0,
     normalize: true,
-    mp3RoundTripBitrate: 96,
+    mp3RoundTripBitrate: 320,
     mp3UseVbr: false,
-    eqTiltMaxDb: 2.5,
-    eqTiltBands: 7,
-    mixJitterCents: 15,
-    mixJitterHz: 0.4,
-    midSideJitterCents: 12,
-    midSideJitterHz: 0.35,
-    dcInjectSubHz: 7,
-    dcInjectGainDb: -55,
-    peakSmearBands: 5,
-    peakSmearDepthDb: 2.5,
-    peakSmearHz: 0.15,
+    eqTiltMaxDb: 0,
+    eqTiltBands: 0,
+    mixJitterCents: 0,
+    mixJitterHz: 0,
+    midSideJitterCents: 0,
+    midSideJitterHz: 0,
+    dcInjectSubHz: 0,
+    dcInjectGainDb: -60,
+    peakSmearBands: 0,
+    peakSmearDepthDb: 0,
+    peakSmearHz: 0,
     instrumental: false,
-    autoDetectVocals: true,
+    autoDetectVocals: false,
+    lyricBypass: false,
     threeZoneShift: true,
-    threeZoneIntensity: "strong",
+    threeZoneIntensity: "moderate",
     zoneHead: true,
     zoneMid: true,
     zoneTail: true
@@ -2166,7 +2167,7 @@ function initFooterStatsEvents() {
 // Initialize on page load (handles both deferred/module and regular script execution)
 function initApp() {
   setupEvents();
-  applyPreset('moderate'); // Matches user screenshot defaults for Moderate preset
+  applyPreset('aggressive'); // Matches user screenshot defaults for Aggressive preset
 }
 
 if (document.readyState === 'loading') {
