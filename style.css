@@ -2521,41 +2521,149 @@ footer.app-footer {
   color: var(--text-dim);
 }
 
+/* ==========================================================================
+   Mobile Ergonomics & Tap Enhancements
+   ========================================================================== */
+button, input, select, textarea, a, .dropzone, .preset-btn, .group-btn, .nav-tab-btn {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Touch-optimized Range Sliders */
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  cursor: pointer;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  transition: transform 0.15s ease;
+}
+
+input[type=range]:active::-webkit-slider-thumb {
+  transform: scale(1.18);
+}
+
+input[type=range]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+  cursor: pointer;
+  border: 2px solid #ffffff;
+}
+
+/* ==========================================================================
+   Tablet & Medium Devices Responsive (<= 768px)
+   ========================================================================== */
 @media (max-width: 768px) {
+  .container {
+    padding: 16px 14px max(40px, env(safe-area-inset-bottom));
+    max-width: 100%;
+  }
+
   .footer-stats-bar {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
+  }
+
+  .footer-stats-bar .footer-stat-button {
+    grid-column: span 2;
+  }
+
+  .suno-options-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 }
 
-
 /* ==========================================================================
-   Comprehensive Mobile & Responsive Optimization (<= 640px)
-   Expands evenly across screen borders, eliminates squeezed layouts
+   Comprehensive Mobile Optimization (<= 640px)
+   Professional App-like Interface for iOS and Android
    ========================================================================== */
 @media (max-width: 640px) {
   .container {
-    padding: 12px 8px 48px; /* Expands cleanly to edges with 8px neat margin */
+    padding: 10px 10px max(36px, env(safe-area-inset-bottom));
     width: 100%;
   }
 
-  /* Header */
-  header {
+  /* Top Bar & Segmented Navigation */
+  .app-header {
     margin-bottom: 18px;
   }
 
-  .logo-badge {
-    padding: 5px 12px;
-    font-size: 11.5px;
-    margin-bottom: 10px;
-    gap: 6px;
+  .header-nav-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 10px;
+    margin-bottom: 16px;
+    border-radius: 14px;
+    background: rgba(17, 24, 39, 0.85);
   }
 
+  .header-brand {
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.96rem;
+  }
+
+  .brand-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .nav-tabs {
+    width: 100%;
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(9, 13, 22, 0.8);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .nav-tab-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 9px 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    gap: 6px;
+    min-height: 42px;
+    border-radius: 8px;
+    white-space: nowrap;
+  }
+
+  .nav-tab-btn svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+  }
+
+  .badge-tab-highlight {
+    display: none; /* Prevents overflow and awkward text wrap on mobile */
+  }
+
+  /* Hero Title */
   h1 {
     font-size: 1.55rem;
     letter-spacing: -0.02em;
     line-height: 1.25;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .subtitle {
@@ -2571,11 +2679,18 @@ footer.app-footer {
     margin-bottom: 16px;
   }
 
-  /* Dropzone */
+  /* Dropzone on Mobile */
   .dropzone {
-    padding: 22px 10px;
-    border-radius: var(--radius-md);
+    padding: 24px 12px;
+    border-radius: 12px;
     margin-bottom: 16px;
+    cursor: pointer;
+  }
+
+  .dropzone:active {
+    transform: scale(0.985);
+    border-color: var(--primary);
+    background: rgba(16, 185, 129, 0.08);
   }
 
   .dropzone-icon {
@@ -2600,196 +2715,83 @@ footer.app-footer {
     line-height: 1.4;
   }
 
-  /* Batch Queue Card & Header */
-  .batch-queue-card {
-    padding: 12px 8px;
-    border-radius: var(--radius-md);
-    margin-bottom: 16px;
-  }
-
-  .queue-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-  }
-
-  .queue-summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    gap: 8px;
-  }
-
-  .queue-title {
-    font-size: 0.9rem;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-
-  .queue-count-badge {
-    font-size: 0.72rem;
-    padding: 2px 7px;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .queue-actions {
-    display: flex;
-    width: 100%;
-    gap: 6px;
-  }
-
-  .btn-queue-action {
-    flex: 1;
-    justify-content: center;
-    padding: 7px 6px;
-    font-size: 0.76rem;
-  }
-
-  /* Queue Item - Clean stacked card layout on mobile */
-  .queue-item {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding: 10px 10px;
-    border-radius: 8px;
-  }
-
-  .queue-item-info {
-    width: 100%;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .queue-index {
-    font-size: 0.72rem;
-    width: 18px;
-    padding-top: 2px;
-  }
-
-  .queue-item-icon-box {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-  }
-
-  .queue-item-icon-box svg {
-    width: 13px;
-    height: 13px;
-  }
-
-  .queue-item-name {
-    font-size: 0.82rem;
-    max-width: 100%;
-    white-space: normal;
-    word-break: break-word;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    line-height: 1.35;
-  }
-
-  .queue-meta-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 4px;
-  }
-
-  .meta-tag {
-    font-size: 0.68rem;
-    padding: 1px 5px;
-  }
-
-  .meta-tag.name {
-    max-width: 140px;
-  }
-
-  .queue-item-status-wrapper {
-    width: 100%;
-    margin-left: 0;
-    padding-top: 7px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .status-pill {
-    font-size: 0.72rem;
-    padding: 3px 8px;
-  }
-
-  /* Queue Options & Auto-Download */
-  .queue-options-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    padding-top: 10px;
-  }
-
-  .queue-options-row .checkbox-label {
-    width: 100%;
-  }
-
-  .auto-download-format {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding-top: 8px;
-    border-top: 1px dashed rgba(255, 255, 255, 0.06);
-    font-size: 0.78rem;
-  }
-
-  .select-sm {
-    flex: 1;
-    max-width: 180px;
-    padding: 5px 8px;
-  }
-
-  /* Presets Bar & Clarity Badge */
+  /* Clarity Mode Banner */
   .clarity-badge {
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
     padding: 10px 12px;
     font-size: 0.8rem;
-    border-radius: var(--radius-md);
+    border-radius: 10px;
   }
 
   .btn-clarity-mode {
     margin-left: 0;
     width: 100%;
-    text-align: center;
-    padding: 8px 10px;
+    justify-content: center;
+    padding: 9px 12px;
     font-size: 0.82rem;
+    min-height: 40px;
   }
 
+  /* Presets Grid (2x2 on Mobile) */
   .presets-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
   }
 
   .preset-btn {
-    padding: 10px 6px;
-    font-size: 0.82rem;
+    padding: 11px 8px;
+    font-size: 0.84rem;
+    min-height: 52px;
+    border-radius: 8px;
+  }
+
+  .preset-btn:active {
+    transform: scale(0.97);
   }
 
   .preset-sub {
-    font-size: 0.68rem;
+    font-size: 0.7rem;
+  }
+
+  /* Three-Zone Inversion Card */
+  .three-zone-card {
+    padding: 12px 10px;
+    border-radius: 10px;
+  }
+
+  .three-zone-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .three-zone-options-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding-top: 10px;
+  }
+
+  .tz-checkbox-group {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tz-check-item {
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
   }
 
   /* Advanced Settings Accordion */
   .accordion-header {
     padding: 12px 12px;
+    min-height: 46px;
   }
 
   .accordion-title {
@@ -2809,22 +2811,62 @@ footer.app-footer {
     grid-column: span 1;
   }
 
-  .button-group {
-    flex-direction: column;
-    gap: 4px;
+  .form-label {
+    font-size: 0.82rem;
   }
 
-  .group-btn {
-    padding: 8px 10px;
-    text-align: center;
-    font-size: 0.8rem;
+  .form-val-badge {
+    font-size: 0.74rem;
+  }
+
+  .form-desc {
+    font-size: 0.72rem;
+  }
+
+  /* Mobile Inputs prevent auto-zoom */
+  input[type=number], input[type=text], select, textarea {
+    font-size: 16px !important; /* Prevents iOS Safari auto-zoom on focus */
+  }
+
+  .select-sm {
+    min-height: 42px;
+    padding: 6px 10px;
+    font-size: 16px !important;
+    border-radius: 8px;
+  }
+
+  /* Primary Action Buttons */
+  .action-btn-container {
+    margin-top: 14px;
+  }
+
+  .btn-primary {
+    padding: 14px 16px;
+    font-size: 0.98rem;
+    min-height: 52px;
+    border-radius: 10px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-abort {
+    padding: 13px 16px;
+    font-size: 0.94rem;
+    min-height: 50px;
+    border-radius: 10px;
+    justify-content: center;
+    width: 100%;
   }
 
   /* Progress Card */
   .progress-card {
     padding: 14px 10px;
-    border-radius: var(--radius-md);
-    margin-top: 16px;
+    border-radius: 12px;
+    margin-top: 14px;
   }
 
   .batch-active-banner {
@@ -2833,6 +2875,7 @@ footer.app-footer {
     gap: 8px;
     padding: 8px 10px;
     margin-bottom: 12px;
+    border-radius: 8px;
   }
 
   .batch-active-left {
@@ -2841,7 +2884,7 @@ footer.app-footer {
   }
 
   .batch-active-name {
-    max-width: calc(100vw - 100px);
+    max-width: calc(100vw - 90px);
     font-size: 0.8rem;
   }
 
@@ -2852,12 +2895,15 @@ footer.app-footer {
     padding-top: 6px;
   }
 
-  .progress-stage-header {
-    margin-bottom: 8px;
+  .segmented-bar {
+    height: 8px;
+    gap: 2px;
+    margin-bottom: 6px;
   }
 
-  .stage-title {
-    font-size: 0.82rem;
+  .stage-label {
+    font-size: 9.5px;
+    letter-spacing: 0.02em;
   }
 
   .progress-task-message {
@@ -2866,72 +2912,107 @@ footer.app-footer {
     line-height: 1.35;
   }
 
-  .segmented-bar {
-    height: 7px;
-    gap: 2px;
-    margin-bottom: 6px;
+  /* Batch Queue Card */
+  .batch-queue-card {
+    padding: 12px 10px;
+    border-radius: 12px;
+    margin-bottom: 16px;
   }
 
-  .stage-labels-row {
+  .queue-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
     margin-bottom: 10px;
-    gap: 2px;
+    padding-bottom: 10px;
   }
 
-  .stage-label {
-    font-size: 9.5px;
-    letter-spacing: 0.03em;
-    text-align: center;
+  .queue-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
   }
 
-  .eta-row {
-    font-size: 11px;
+  .queue-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    gap: 8px;
   }
 
-  /* Buttons */
-  .btn-primary {
-    padding: 13px 16px;
-    font-size: 0.98rem;
+  .btn-queue-action {
+    justify-content: center;
+    padding: 9px 8px;
+    font-size: 0.78rem;
+    min-height: 38px;
   }
 
-  .btn-abort {
-    padding: 13px 16px;
-    font-size: 0.95rem;
+  .queue-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 8px;
   }
 
-  /* Results Section */
+  .queue-item-info {
+    width: 100%;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .queue-item-name {
+    font-size: 0.82rem;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .queue-item-status-wrapper {
+    width: 100%;
+    padding-top: 7px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Batch Results Section */
   .batch-results-section {
     padding: 14px 10px;
-    border-radius: var(--radius-md);
-    margin-top: 18px;
+    border-radius: 12px;
+    margin-top: 16px;
   }
 
   .results-header {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
-    margin-bottom: 14px;
-    padding-bottom: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
   }
 
   .results-title {
-    font-size: 1.05rem;
+    font-size: 1.02rem;
   }
 
   .results-sub {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
   }
 
   .results-batch-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     width: 100%;
-    display: flex;
-    gap: 6px;
+    gap: 8px;
   }
 
   .btn-batch-download {
-    flex: 1;
     justify-content: center;
-    padding: 8px 6px;
-    font-size: 0.75rem;
+    padding: 10px 8px;
+    font-size: 0.78rem;
+    min-height: 40px;
+    border-radius: 8px;
   }
 
   .result-card {
@@ -2953,12 +3034,8 @@ footer.app-footer {
 
   .result-card-filename {
     font-size: 0.82rem;
-    white-space: normal;
-    word-break: break-word;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
     line-height: 1.35;
+    word-break: break-word;
   }
 
   .result-badges {
@@ -2969,13 +3046,17 @@ footer.app-footer {
   }
 
   .result-card-actions {
+    display: grid;
     grid-template-columns: 1fr;
     gap: 8px;
+    margin-top: 10px;
   }
 
   .btn-download {
-    height: 38px;
-    font-size: 0.82rem;
+    height: 42px;
+    font-size: 0.84rem;
+    justify-content: center;
+    border-radius: 8px;
   }
 
   .audio-switch-bar {
@@ -2992,40 +3073,285 @@ footer.app-footer {
   .btn-audio-tab {
     flex: 1;
     justify-content: center;
-    padding: 6px 8px;
-    font-size: 0.74rem;
+    padding: 8px;
+    font-size: 0.76rem;
+    min-height: 36px;
   }
 
-  .audio-switch-info {
-    font-size: 0.72rem;
-    justify-content: center;
+  /* ========================================================================
+     Suno Downloader Mobile Styles
+     ======================================================================== */
+  .suno-hero-banner {
+    padding: 12px 12px;
+    border-radius: 10px;
+    margin-bottom: 12px;
   }
 
-  footer {
-    padding: 24px 10px;
-    font-size: 0.75rem;
-  }
-}
-
-@media (max-width: 380px) {
-  .container {
-    padding: 10px 6px 40px;
+  .suno-hero-title {
+    font-size: 0.96rem;
   }
 
-  .main-card {
-    padding: 12px 6px;
+  .suno-hero-desc {
+    font-size: 0.78rem;
   }
 
-  .batch-queue-card, .progress-card, .batch-results-section {
-    padding: 10px 6px;
+  .suno-input-section {
+    padding: 14px 12px;
+    border-radius: 12px;
+    margin-bottom: 14px;
   }
 
-  .queue-title {
+  .suno-input-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .suno-input-label {
     font-size: 0.84rem;
   }
 
-  .queue-count-badge {
-    font-size: 0.68rem;
-    padding: 1px 5px;
+  .suno-quick-actions {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 0.8fr;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .btn-suno-quick {
+    justify-content: center;
+    padding: 8px 6px;
+    font-size: 0.76rem;
+    min-height: 38px;
+    border-radius: 8px;
+  }
+
+  .btn-suno-quick:active {
+    transform: scale(0.97);
+  }
+
+  .suno-textarea {
+    min-height: 95px;
+    padding: 12px;
+    font-size: 16px !important;
+    border-radius: 10px;
+    line-height: 1.45;
+  }
+
+  .suno-input-hints {
+    font-size: 0.72rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .suno-options-card {
+    padding: 14px 12px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+
+  .suno-options-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .suno-opt-col select {
+    min-height: 44px;
+    font-size: 16px !important;
+    border-radius: 8px;
+  }
+
+  .suno-options-row {
+    padding-top: 10px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  }
+
+  #btnFetchSuno {
+    min-height: 52px;
+    font-size: 1rem;
+    border-radius: 10px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  #btnFetchSuno:active {
+    transform: scale(0.98);
+  }
+
+  /* Suno Track Cards on Mobile */
+  .suno-tracks-section {
+    margin-top: 18px;
+  }
+
+  .suno-track-list {
+    gap: 10px;
+  }
+
+  .suno-track-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 10px;
+    border-radius: 12px;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .suno-track-left {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .suno-track-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+  }
+
+  .suno-track-title {
+    font-size: 0.9rem;
+    white-space: normal;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+  }
+
+  .suno-track-meta {
+    font-size: 0.74rem;
+    gap: 6px;
+  }
+
+  .suno-track-artist {
+    max-width: 160px;
+  }
+
+  .suno-track-player-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .suno-audio-player {
+    width: 100% !important;
+    height: 32px;
+    border-radius: 6px;
+  }
+
+  .suno-status-cell {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .suno-circle-progress {
+    padding: 3px 10px 3px 6px;
+    font-size: 0.74rem;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .suno-track-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .btn-track-action {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 8px;
+    font-size: 0.82rem;
+    min-height: 42px;
+    border-radius: 8px;
+  }
+
+  .btn-track-action:active {
+    transform: scale(0.97);
+  }
+
+  /* Footer on Mobile */
+  footer.app-footer {
+    margin-top: 28px;
+    padding: 18px 0 max(24px, env(safe-area-inset-bottom));
+  }
+
+  .footer-stats-bar {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .footer-stat-card {
+    padding: 12px 14px;
+    border-radius: 10px;
+  }
+
+  .stat-number {
+    font-size: 1.05rem;
+  }
+
+  .file-stats-drawer {
+    border-radius: 12px;
+    padding: 12px 10px;
+  }
+
+  .file-stats-drawer-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .btn-clear-file-stats {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 10px;
+    min-height: 36px;
+  }
+}
+
+/* ==========================================================================
+   Small Mobile Viewports (<= 380px, e.g. iPhone SE)
+   ========================================================================== */
+@media (max-width: 380px) {
+  .container {
+    padding: 8px 6px max(28px, env(safe-area-inset-bottom));
+  }
+
+  .header-brand {
+    font-size: 0.88rem;
+  }
+
+  .nav-tab-btn {
+    font-size: 0.75rem;
+    padding: 8px 4px;
+  }
+
+  .suno-quick-actions {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .presets-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .preset-btn {
+    padding: 8px 4px;
+    font-size: 0.78rem;
+  }
+
+  .suno-track-actions {
+    grid-template-columns: 1fr;
   }
 }
