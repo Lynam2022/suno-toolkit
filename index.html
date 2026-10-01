@@ -152,11 +152,11 @@
         <span style="font-size: 0.72rem; color: var(--text-dim);">Chọn cấu hình</span>
       </div>
       <div class="presets-grid">
-        <button type="button" class="preset-btn active" data-preset="subtle">
+        <button type="button" class="preset-btn" data-preset="subtle">
           <span>Subtle</span>
           <span class="preset-sub">Tinh tế • Nhẹ</span>
         </button>
-        <button type="button" class="preset-btn" data-preset="moderate">
+        <button type="button" class="preset-btn active" data-preset="moderate">
           <span>Moderate</span>
           <span class="preset-sub">Tiêu chuẩn</span>
         </button>
@@ -202,8 +202,8 @@
                 <span>Chế độ Instrumental only</span>
               </label>
               <div class="button-group">
-                <button type="button" class="group-btn inst-mode-btn" data-mode="off">Off (Giữ giọng)</button>
-                <button type="button" class="group-btn inst-mode-btn active" data-mode="light">Light (Bỏ kênh giữa)</button>
+                <button type="button" class="group-btn inst-mode-btn active" data-mode="off">Off (Giữ giọng)</button>
+                <button type="button" class="group-btn inst-mode-btn" data-mode="light">Light (Bỏ kênh giữa)</button>
                 <button type="button" class="group-btn inst-mode-btn" data-mode="hard">Hard (Tách sâu)</button>
               </div>
               <div class="form-desc">Triệt tiêu vocal trực tiếp trên trình duyệt.</div>
@@ -223,9 +223,9 @@
             <div class="form-group">
               <label class="form-label" for="inputTempo">
                 <span>Tempo (%, 100 = nguyên bản)</span>
-                <span class="form-val-badge" id="valTempo">100%</span>
+                <span class="form-val-badge" id="valTempo">95%</span>
               </label>
-              <input type="range" id="inputTempo" min="50" max="200" step="1" value="100">
+              <input type="range" id="inputTempo" min="50" max="200" step="1" value="95">
               <div class="form-desc">100% = giữ nguyên nhịp gốc.</div>
             </div>
 
@@ -251,9 +251,9 @@
             <div class="form-group">
               <label class="form-label" for="inputReverb">
                 <span>Reverb wet (%)</span>
-                <span class="form-val-badge" id="valReverb">0%</span>
+                <span class="form-val-badge" id="valReverb">15%</span>
               </label>
-              <input type="range" id="inputReverb" min="0" max="100" step="1" value="0">
+              <input type="range" id="inputReverb" min="0" max="100" step="1" value="15">
               <div class="form-desc">0% = âm thanh gốc sắc nét.</div>
             </div>
 
@@ -261,9 +261,9 @@
             <div class="form-group">
               <label class="form-label" for="inputSilence">
                 <span>Silence pad (s)</span>
-                <span class="form-val-badge" id="valSilence">0s</span>
+                <span class="form-val-badge" id="valSilence">0.5s</span>
               </label>
-              <input type="range" id="inputSilence" min="0" max="10" step="0.1" value="0">
+              <input type="range" id="inputSilence" min="0" max="10" step="0.1" value="0.5">
               <div class="form-desc">Thêm khoảng im lặng đầu bài.</div>
             </div>
 
@@ -271,9 +271,9 @@
             <div class="form-group">
               <label class="form-label" for="inputMp3Bitrate">
                 <span>MP3 round-trip bitrate (kbps, blank = off)</span>
-                <span class="form-val-badge" id="valMp3Bitrate">320 kbps</span>
+                <span class="form-val-badge" id="valMp3Bitrate">128 kbps</span>
               </label>
-              <input type="range" id="inputMp3Bitrate" min="32" max="320" step="16" value="320">
+              <input type="range" id="inputMp3Bitrate" min="32" max="320" step="16" value="128">
               <div class="form-desc">Nén vòng xáo trộn đỉnh phổ (320 kbps).</div>
             </div>
 
@@ -292,9 +292,9 @@
             <div class="form-group">
               <label class="form-label" for="inputEqTiltMax">
                 <span>EQ tilt max ±dB (0 = off)</span>
-                <span class="form-val-badge" id="valEqTiltMax">±0 dB</span>
+                <span class="form-val-badge" id="valEqTiltMax">±1.5 dB</span>
               </label>
-              <input type="range" id="inputEqTiltMax" min="0" max="6" step="0.5" value="0">
+              <input type="range" id="inputEqTiltMax" min="0" max="6" step="0.5" value="1.5">
               <div class="form-desc">Biến dạng âm sắc ngẫu nhiên.</div>
             </div>
 
@@ -322,9 +322,9 @@
             <div class="form-group">
               <label class="form-label" for="inputSideJitter">
                 <span>Side-channel jitter (cents, 0 = off)</span>
-                <span class="form-val-badge" id="valSideJitter">±0¢</span>
+                <span class="form-val-badge" id="valSideJitter">±8¢</span>
               </label>
-              <input type="range" id="inputSideJitter" min="0" max="50" step="1" value="0">
+              <input type="range" id="inputSideJitter" min="0" max="50" step="1" value="8">
               <div class="form-desc">Làm nhiễu Stereo để xóa fingerprint.</div>
               <input type="hidden" id="inputSideJitterHz" value="0">
             </div>
@@ -426,7 +426,7 @@
             <!-- Auto-detect Vocals -->
             <div class="form-group col-span-2">
               <label class="checkbox-row" for="chkAutoDetect" style="margin-bottom:0;">
-                <input type="checkbox" id="chkAutoDetect">
+                <input type="checkbox" id="chkAutoDetect" checked>
                 <div>
                   <span class="checkbox-title">Auto-detect vocals before lyric bypass</span>
                   <span class="checkbox-desc">Tự động quét giọng hát trước khi tách.</span>

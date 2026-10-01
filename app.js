@@ -40,7 +40,7 @@ const PRESETS = {
   },
   moderate: {
     instrumentalMode: "off",
-    pitchSemitones: -2,
+    pitchSemitones: 0,
     speedFactor: 0.95,
     sampleRate: 48000,
     eqNotchHz: 0,
@@ -50,8 +50,8 @@ const PRESETS = {
     mp3RoundTripBitrate: 128,
     mp3UseVbr: false,
     eqTiltMaxDb: 1.5,
-    eqTiltBands: 6,
-    mixJitterCents: 10,
+    eqTiltBands: 0,
+    mixJitterCents: 0,
     mixJitterHz: 0.3,
     midSideJitterCents: 8,
     midSideJitterHz: 0.25,
@@ -62,8 +62,9 @@ const PRESETS = {
     peakSmearHz: 0,
     instrumental: false,
     autoDetectVocals: true,
+    lyricBypass: false,
     threeZoneShift: true,
-    threeZoneIntensity: "moderate",
+    threeZoneIntensity: "subtle",
     zoneHead: true,
     zoneMid: true,
     zoneTail: true
@@ -2165,7 +2166,7 @@ function initFooterStatsEvents() {
 // Initialize on page load (handles both deferred/module and regular script execution)
 function initApp() {
   setupEvents();
-  applyPreset('subtle'); // Matches user screenshot defaults
+  applyPreset('moderate'); // Matches user screenshot defaults for Moderate preset
 }
 
 if (document.readyState === 'loading') {
