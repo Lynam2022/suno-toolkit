@@ -1,5 +1,6 @@
+(() => {
 // DSP engine functions loaded globally from dsp.js
-const { processAudioPipeline, decodeAudioFile, encodeWAV, encodeMP3 } = (typeof window !== 'undefined' ? window : {});
+const { processAudioPipeline, decodeAudioFile, encodeWAV, encodeMP3 } = (typeof window !== 'undefined' ? (window.SunoDSP || window) : {});
 
 // Automatic API Base URL (supports both http:// and direct file:/// opening)
 const API_BASE = (typeof window !== 'undefined' && window.location.protocol === 'file:') ? 'http://127.0.0.1:3300' : '';
@@ -2075,14 +2076,6 @@ function setupSunoDownloaderEvents() {
       }
     });
   }
-
-  if (btnDlFetchedMp3) {
-    btnDlFetchedMp3.addEventListener('click', () => recordSunoDownload(1));
-  }
-  if (btnDlFetchedWav) {
-    btnDlFetchedWav.addEventListener('click', () => recordSunoDownload(1));
-  }
-
   // Khởi tạo bộ đếm và giao diện thống kê chân trang
   initFooterStatsEvents();
 }
@@ -2218,4 +2211,5 @@ if (document.readyState === 'loading') {
 } else {
   initApp();
 }
+})();
 
